@@ -20,6 +20,7 @@ swclient.php
 
 swserver.php
 使用最简单的方式实现的服务端
+目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 
 做这个只是为了减少大家启用RPC的开发时间
 
@@ -28,6 +29,7 @@ swserver.php
 使用方法
 
 客户端
+```
 $obj = new DoraRPCClient();
 for ($i = 0; $i < 100000; $i++) {
 
@@ -41,10 +43,12 @@ for ($i = 0; $i < 100000; $i++) {
     $ret = $obj->multiAPI($data, false);
     var_dump($ret);
 }
+```
 
 服务端
-$server = new DoraRPCServer();
-
+```
+    $server = new DoraRPCServer();
+```
 
 以上代码测试方法
 include以上两个文件，使用命令行启动即可（客户端支持在apache nginx fpm内执行，服务端只支持命令行启动）

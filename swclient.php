@@ -1,8 +1,8 @@
 <?php
-
-
 /**
  * Class DoraRPCClient
+ * https://github.com/xcl3721/Dora-RPC
+ * by 蓝天 http://weibo.com/thinkpc
  */
 class DoraRPCClient
 {

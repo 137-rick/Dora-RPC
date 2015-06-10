@@ -1,8 +1,10 @@
 <?php
 /**
  * Class DoraRPCServer
+ * https://github.com/xcl3721/Dora-RPC
+ * by 蓝天 http://weibo.com/thinkpc
  */
-class DoraRPCServer
+abstract class DoraRPCServer
 {
     const SW_SYNC_SINGLE = 'SSS';
     const SW_RSYNC_SINGLE = 'SRS';
@@ -164,14 +166,8 @@ class DoraRPCServer
         return $data;
     }
 
-    public function doWork($param)
-    {
-        return array("yes" => "ok");
-    }
+    abstract public function doWork($param);
 
-    //function onWorkerStart( $server,  $worker_id)
-    //{
-    //}
 
     final function onWorkerError(swoole_server $serv, $worker_id, $worker_pid, $exit_code)
     {
