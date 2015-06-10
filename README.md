@@ -1,14 +1,14 @@
 #Dora RPC
 ----------
-##简介(Introduce)
+##简介(Introduction)
 
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
 > * 目前只提供PHP语言代码
 > * 后续有什么bug或者问题请提交Issue
 
-> * Dora RPC is an Basic Swoole Fix Header TCP Proctol tiny RPC
-> * Now support an simply PHP version
-> * if you got something wrong please submit Issue
+> * Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC
+> * Now support an simple PHP version
+> * If you find something wrong,please submit an issue
 
 ----------
 #功能支持(Function)
@@ -16,16 +16,16 @@
 > * 支持同步调用，异步任务下发
 > * 其他相关知识请参考Swoole扩展
 
-> * Single API RPC,Multi API Concurrent RPC
+> * Single API RPC \ Multi API Concurrent RPC
 > * Asynchronous synchronization
-> * other please visit Swoole official
+> * Please visit Swoole official for further infomation
 
 ----------
 ##请安装依赖(depend)
 > * Swoole 1.7.17+
 > * PHP 5.4+
 
-##Install
+##Installation
 ```
 pecl install swoole
 ```
@@ -44,10 +44,10 @@ pecl install swoole
 > * a simple server
 > * you must extends the swserver and implement dowork function
 > * it's use for decrease the dev cycle
-> * the result now have two leve array:first is communicate state(code field),second is dowork state
+> * the result will be a two-level array:first is communicate state(code field),second is dowork state
 ----------
 
-##使用方法(eg)
+##使用方法(Example)
 
 ###客户端(Client)
 ```
@@ -68,7 +68,7 @@ for ($i = 0; $i < 100000; $i++) {
 ```
 
 
-###服务端
+###服务端(Server)
 ```
     $server = new DoraRPCServer();//这里必须是DoraRPCServer继承类并实现dowork才可以工作
 ```
