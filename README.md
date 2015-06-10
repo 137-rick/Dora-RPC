@@ -10,6 +10,7 @@
 > * Now support an simply PHP version
 > * if you got something wrong please submit Issue
 
+----------
 #功能支持(Function)
 > * 支持单API调用，多API并发调用
 > * 支持同步调用，异步任务下发
@@ -18,6 +19,7 @@
 > * Single API RPC,Multi API Concurrent RPC
 > * Asynchronous synchronization
 > * other please visit Swoole official
+
 ----------
 ##请安装依赖(depend)
 > * Swoole 1.7.17+
@@ -39,10 +41,9 @@ pecl install swoole
 > * 目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 > * 做这个只是为了减少大家启用RPC的开发时间
 > * 返回结果是一个数组 分两部分，第一层是通讯状态（code），第二层是处理状态（code）
-
 > * a simple server
 > * you must extends the swserver and implement dowork function
-> * it's useful decrease the dev cycle
+> * it's use for decrease the dev cycle
 > * the result now have two leve array:first is communicate state(code field),second is dowork state
 ----------
 
