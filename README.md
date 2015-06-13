@@ -13,6 +13,7 @@
 > * If you find something wrong,please submit an issue
 
 ----------
+
 #功能支持(Function)
 > * 支持单API调用，多API并发调用
 > * 支持同步调用，异步任务下发
@@ -29,6 +30,7 @@
 > * check the guid when the send<->recive
 
 ----------
+
 ##请安装依赖(depend)
 > * Swoole 1.7.17+
 > * PHP 5.4+
@@ -37,7 +39,9 @@
 ```
 pecl install swoole
 ```
+
 ----------
+
 ##文件功能简介(File)
 ###swclient.php
 > * 使用最简单的方式实现的客户端
@@ -94,7 +98,7 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 
 ----------
 
-###错误码及含义(Error Code)
+##错误码及含义(Error Code)
 > * 0 Success work
 > * 100001 async task success
 > * 100002 unknow task type
@@ -102,3 +106,16 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100007 socket error the recive packet length is wrong
 > * 100008 the return guid wrong may be the socket trasfer wrong data
 
+----------
+
+##性能(Performance)
+> * Mac I7 Intel 2.2Mhz 
+> * Vagrant with Vm 1 Core
+> * 1G Memory
+> * with example code (loop forever)
+
+----------
+###Result
+> * TPS 2100
+> * Response Time:0.02~0.04/sec
+> * CPU 10~25%
