@@ -16,11 +16,13 @@
 > * 支持同步调用，异步任务下发
 > * 其他相关知识请参考Swoole扩展
 > * 客户端长链接，请求完毕后仍旧保留，减少握手消耗
+> * guid收发一致性检测，避免发送和接收数据不一致
 
 > * Single API RPC \ Multi API Concurrent RPC
 > * Asynchronous synchronization
 > * Please visit Swoole official for further infomation
 > * keep the connection of client after the request finishe
+> * check the guid when the send<->recive
 
 ----------
 ##请安装依赖(depend)
@@ -78,3 +80,12 @@ for ($i = 0; $i < 100000; $i++) {
 include以上两个文件，使用命令行启动即可（客户端支持在apache nginx fpm内执行，服务端只支持命令行启动）
 > * php swclient.php
 > * php swserver.php
+
+###错误码及含义(Error Code)
+> * 0 Success work
+> * 100001 async task success
+> * 100002 unknow task type
+> * 100003 you must fill the api parameter on you request
+> * 100007 socket error the recive packet length is wrong
+> * 100008 the return guid wrong may be the socket trasfer wrong data
+

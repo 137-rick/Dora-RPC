@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class DoraRPCServer
  * https://github.com/xcl3721/Dora-RPC
@@ -111,6 +112,7 @@ abstract class DoraRPCServer
                 $serv->task($task);
 
                 $pack = $this->packFormat("已经成功投递", 100001);
+                $pack["guid"] = $task["guid"];
                 $pack = $this->packEncode($pack);
                 $serv->send($fd, $pack);
 
@@ -134,6 +136,7 @@ abstract class DoraRPCServer
                     $serv->task($task);
                 }
                 $pack = $this->packFormat("已经成功投递", 100001);
+                $pack["guid"] = $task["guid"];
                 $pack = $this->packEncode($pack);
 
                 $serv->send($fd, $pack);
@@ -198,6 +201,7 @@ abstract class DoraRPCServer
 
             case self::SW_SYNC_SINGLE:
                 $packet = $this->packFormat("OK", 0, $data["result"]);
+                $packet["guid"] = $this->taskInfo[$fd]["guid"];
                 $packet = $this->packEncode($packet);
                 $serv->send($fd, $packet);
                 unset($this->taskInfo[$fd]);
@@ -207,6 +211,7 @@ abstract class DoraRPCServer
             case self::SW_SYNC_MULTI:
                 if (count($this->taskInfo[$fd]["task"]) == 0) {
                     $packet = $this->packFormat("OK", 0, $this->taskInfo[$fd]["result"]);
+                    $packet["guid"] = $this->taskInfo[$fd]["guid"];
                     $packet = $this->packEncode($packet);
                     $serv->send($fd, $packet);
                     unset($this->taskInfo[$fd]);

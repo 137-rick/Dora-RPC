@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class DoraRPCClient
  * https://github.com/xcl3721/Dora-RPC
@@ -114,7 +115,9 @@ class DoraRPCClient
         $result = self::$client->recv();
         $result = $this->packDecode($result);
 
-        //todo:guid verify
+        if ($guid != $result["data"]["guid"]) {
+            return $this->packFormat("guid wront please retry..", 100100, $result);
+        }
         return $result;
     }
 
@@ -170,7 +173,10 @@ class DoraRPCClient
         $result = self::$client->recv();
 
         $result = $this->packDecode($result);
-        //todo:guid verify
+
+        if ($guid != $result["data"]["guid"]) {
+            return $this->packFormat("guid wront please retry..", 100008, $result);
+        }
         return $result;
     }
 
