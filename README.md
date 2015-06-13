@@ -15,10 +15,12 @@
 > * 支持单API调用，多API并发调用
 > * 支持同步调用，异步任务下发
 > * 其他相关知识请参考Swoole扩展
+> * 客户端长链接，请求完毕后仍旧保留，减少握手消耗
 
 > * Single API RPC \ Multi API Concurrent RPC
 > * Asynchronous synchronization
 > * Please visit Swoole official for further infomation
+> * keep the connection of client after the request finishe
 
 ----------
 ##请安装依赖(depend)
@@ -33,7 +35,6 @@ pecl install swoole
 ##文件功能简介(File)
 ###swclient.php
 > * 使用最简单的方式实现的客户端
-
 > * an simple client
 
 ###swserver.php
@@ -44,7 +45,7 @@ pecl install swoole
 > * a simple server
 > * you must extends the swserver and implement dowork function
 > * it's use for decrease the dev cycle
-> * the result will be a two-level array:first is communicate state(code field),second is dowork state
+> * the result will be a two-level arrayfirst is communicate state(code field),second is dowork state
 ----------
 
 ##使用方法(Example)
