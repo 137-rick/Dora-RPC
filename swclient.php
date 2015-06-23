@@ -14,16 +14,52 @@ class DoraRPCClient
     const SW_SYNC_MULTI = 'SSM';
     const SW_RSYNC_MULTI = 'SRM';
 
-    private static $client;
+    //client obj pool
+    private static $client = array();
 
+    //current obj ip port
     private $ip;
     private $port;
 
+    //md5(ip+port)=obj_array_key cache
+    private $objkey;
+
     function __construct($ip = "127.0.0.1", $port = 9567)
     {
-        if (!self::$client) {
-            self::$client = new swoole_client(SWOOLE_SOCK_TCP | SWOOLE_KEEP);
-            self::$client->set(array(
+        $this->ip = $ip;
+        $this->port = $port;
+    }
+
+    //get current client obj
+    private function getCurrentObjKey()
+    {
+        //to prevent wast add an key cache
+        if ($this->objkey == "") {
+            $ip = $this->ip;
+            $port = $this->port;
+
+            $key = md5("$ip==$port");
+            $this->objkey = $key;
+        }
+
+        return $this->objkey;
+    }
+
+    //destroy current client
+    private function destroyCurrentObj()
+    {
+        $key = $this->getCurrentObjKey();
+        unset(self::$client[$key]);
+    }
+
+    //get current client
+    private function getClientObj()
+    {
+        $key = $this->getCurrentObjKey();
+
+        if (!isset(self::$client[$key])) {
+            $client = new swoole_client(SWOOLE_SOCK_TCP | SWOOLE_KEEP);
+            $client->set(array(
                 'open_length_check' => 1,
                 'package_length_type' => 'N',
                 'package_length_offset' => 0,
@@ -31,37 +67,25 @@ class DoraRPCClient
                 'package_max_length' => 1024 * 1024 * 2,
                 'open_tcp_nodelay' => 1,
             ));
-        }
 
-        $this->ip = $ip;
-        $this->port = $port;
+            if (!$client->connect($this->ip, $this->port, 3.0)) {
+                //connect fail
+                $errorcode = $client->errCode;
+                if ($errorcode == 0) {
+                    $msg = "connect fail.check host dns.";
+                    $errorcode = -1;
+                } else {
+                    $msg = socket_strerror($errorcode);
+                }
 
-        $ret = $this->connect();
-
-        if ($ret["code"] != 0) {
-            return $ret;
-        } else {
-            return $this->packFormat();
-        }
-    }
-
-    private function connect()
-    {
-        if (!self::$client->connect($this->ip, $this->port, 3.0)) {
-            $errorcode = self::$client->errCode;
-            if ($errorcode == 0) {
-                $msg = "connect fail.check host dns.";
-                $errorcode = -1;
-                $packet = $this->packFormat($msg, $errorcode);
-            } else {
-                $msg = socket_strerror($errorcode);
-                $packet = $this->packFormat($msg, $errorcode);
+                throw new Exception($msg, $errorcode);
             }
 
-            return $packet;
+            self::$client[$key] = $client;
         }
-        #success
-        return $this->packFormat();
+
+        //success
+        return self::$client[$key];
     }
 
     /**
@@ -92,14 +116,32 @@ class DoraRPCClient
 
         $sendData = $this->packEncode($packet);
 
-        $ret = self::$client->send($sendData);
+        //get client obj
+        try {
+            $client = $this->getClientObj();
+        } catch (Exception $e) {
+            return $this->packFormat($e->getMessage(), $e->getCode());
+        }
+
+        $ret = $client->send($sendData);
+
+        //retry to reconnect && improve success percentage
         if (!$ret) {
-            $this->connect();
-            $ret = self::$client->send($sendData);
+            //clean up the broken client obj
+            $this->destroyCurrentObj();
+
+            //reconnect by get client obj
+            try {
+                $client = $this->getClientObj();
+            } catch (Exception $e) {
+                return $this->packFormat($e->getMessage(), $e->getCode());
+            }
+            //send again
+            $ret = $client->send($sendData);
         }
 
         if (!$ret) {
-            $errorcode = self::$client->errCode;
+            $errorcode = $client->errCode;
             if ($errorcode == 0) {
                 $msg = "connect fail.check host dns.";
                 $errorcode = -1;
@@ -112,7 +154,7 @@ class DoraRPCClient
             return $packet;
         }
 
-        $result = self::$client->recv();
+        $result = $client->recv();
         $result = $this->packDecode($result);
 
         if ($guid != $result["data"]["guid"]) {
@@ -135,7 +177,6 @@ class DoraRPCClient
     public function multiAPI($params, $sync = true)
     {
 
-        $this->connect();
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
         $packet = array(
             'guid' => $guid,
@@ -150,15 +191,33 @@ class DoraRPCClient
 
         $sendData = $this->packEncode($packet);
 
-        $ret = self::$client->send($sendData);
+        //get client obj
+        try {
+            $client = $this->getClientObj();
+        } catch (Exception $e) {
+            return $this->packFormat($e->getMessage(), $e->getCode());
+        }
+
+        $ret = $client->send($sendData);
 
         if (!$ret) {
-            $this->connect();
-            $ret = self::$client->send($sendData);
+
+            //destroy broken client
+            $this->destroyCurrentObj();
+
+            //reconnect
+            try {
+                $client = $this->getClientObj();
+            } catch (Exception $e) {
+                return $this->packFormat($e->getMessage(), $e->getCode());
+            }
+
+            //resend the request
+            $ret = $client->send($sendData);
         }
 
         if (!$ret) {
-            $errorcode = self::$client->errCode;
+            $errorcode = $client->errCode;
             if ($errorcode == 0) {
                 $msg = "connect fail.check host dns.";
                 $errorcode = -1;
@@ -170,7 +229,7 @@ class DoraRPCClient
             return $packet;
         }
 
-        $result = self::$client->recv();
+        $result = $client->recv();
 
         $result = $this->packDecode($result);
 

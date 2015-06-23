@@ -1,5 +1,13 @@
 #Dora RPC
 ----------
+##更新历史(ChangeLog)
+
+> * 2015-06-23 修复client链接多个ip或端口导致的错误(#2)
+
+----------
+
+> * 2015-06-23 Repair client link multiple ip or port error(#2);
+
 ##简介(Introduction)
 
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
