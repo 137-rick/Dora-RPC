@@ -38,7 +38,7 @@ class DoraRPCClient
             $ip = $this->ip;
             $port = $this->port;
 
-            $key = md5("$ip==$port");
+            $key = $ip."_".$port;
             $this->objkey = $key;
         }
 
