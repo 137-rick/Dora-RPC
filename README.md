@@ -3,10 +3,12 @@
 ##更新历史(ChangeLog)
 
 > * 2015-06-23 修复client链接多个ip或端口导致的错误(#2)
+> * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
 
 ----------
 
 > * 2015-06-23 Repair client link multiple ip or port error(#2);
+> * 2015-06024 Client Server have added SW_DATASIGEN_FLAG and SW_DATASIGEN_SALT parameters, if enabled supports message data signature, can strengthen security, there will increase a little performance loss, it is recommended everyone to customize a SALT
 
 ##简介(Introduction)
 
@@ -76,11 +78,11 @@ pecl install swoole
 ```
 $obj = new DoraRPCClient();
 for ($i = 0; $i < 100000; $i++) {
-    #single
+    //single && sync
     $ret = $obj->singleAPI("abc", array(234, $i), true);
     var_dump($ret);
 
-    #multi
+    //multi && rsync
     $data = array(
         "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
         "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
@@ -94,7 +96,17 @@ for ($i = 0; $i < 100000; $i++) {
 
 ###服务端(Server)
 ```
-    $server = new DoraRPCServer();//这里必须是DoraRPCServer继承类并实现dowork才可以工作
+    //拷贝自 @果然 的测试代码
+    //copy from a frined demo code
+    include "swserver.php";
+    
+    class Server extends DoraRPCServer {
+    	function dowork($a){
+    		return array("hehe"=>"ohyes");
+    	}
+    }
+    
+    $res = new Server();
 ```
 
 ----------

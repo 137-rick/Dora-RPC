@@ -13,6 +13,14 @@ abstract class DoraRPCServer
     const SW_SYNC_MULTI = 'SSM';
     const SW_RSYNC_MULTI = 'SRM';
 
+    //a flag to sure check the crc32
+    //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
+    const SW_DATASIGEN_FLAG = false;
+
+    //salt to mixed the crc result
+    //上面开关开启后，用于加密串混淆结果，请保持客户端和服务端一致
+    const SW_DATASIGEN_SALT = "=&$*#@(*&%(@";
+
     private $server = null;
     private $taskInfo = array();
 
@@ -95,8 +103,6 @@ abstract class DoraRPCServer
             "guid" => $this->taskInfo[$fd]["guid"],
             "fd" => $fd,
         );
-
-        echo "#{$serv->worker_id}>> received length=" . strlen($data) . "\n";
 
         switch ($this->taskInfo[$fd]["type"]) {
 
@@ -238,18 +244,41 @@ abstract class DoraRPCServer
     private function packEncode($data)
     {
         $sendStr = serialize($data);
-        $sendStr = pack('N', strlen($sendStr)) . $sendStr;
+
+        if (self::SW_DATASIGEN_FLAG == true) {
+            $signedcode = pack('N', crc32($sendStr . self::SW_DATASIGEN_SALT));
+            $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
+        } else {
+            $sendStr = pack('N', strlen($sendStr)) . $sendStr;
+        }
+
         return $sendStr;
     }
 
     private function packDecode($str)
     {
         $header = substr($str, 0, 4);
-        $result = substr($str, 4);
-
         $len = unpack("Nlen", $header);
+        $len = $len["len"];
 
-        if ($len["len"] != strlen($result)) {
+        if (self::SW_DATASIGEN_FLAG == true) {
+
+            $signedcode = substr($str, 4, 4);
+            $result = substr($str, 8);
+
+            //check signed
+            if (pack("N", crc32($result . self::SW_DATASIGEN_SALT)) != $signedcode) {
+                return $this->packFormat("Signed check error!", 100010);
+            }
+
+            $len = $len - 4;
+
+        } else {
+            $result = substr($str, 4);
+        }
+
+
+        if ($len != strlen($result)) {
             //结果长度不对
             echo "error length...\n";
             return $this->packFormat("包长度非法", 100007);

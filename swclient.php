@@ -14,6 +14,14 @@ class DoraRPCClient
     const SW_SYNC_MULTI = 'SSM';
     const SW_RSYNC_MULTI = 'SRM';
 
+    //a flag to sure check the crc32
+    //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
+    const SW_DATASIGEN_FLAG = false;
+
+    //salt to mixed the crc result
+    //上面开关开启后，用于加密串混淆结果，请保持客户端和服务端一致
+    const SW_DATASIGEN_SALT = "=&$*#@(*&%(@";
+
     //client obj pool
     private static $client = array();
 
@@ -38,7 +46,7 @@ class DoraRPCClient
             $ip = $this->ip;
             $port = $this->port;
 
-            $key = $ip."_".$port;
+            $key = $ip . "_" . $port;
             $this->objkey = $key;
         }
 
@@ -157,7 +165,7 @@ class DoraRPCClient
         $result = $client->recv();
         $result = $this->packDecode($result);
 
-        if ($guid != $result["data"]["guid"]) {
+        if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
             return $this->packFormat("guid wront please retry..", 100100, $result);
         }
         return $result;
@@ -233,8 +241,8 @@ class DoraRPCClient
 
         $result = $this->packDecode($result);
 
-        if ($guid != $result["data"]["guid"]) {
-            return $this->packFormat("guid wront please retry..", 100008, $result);
+        if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
+            return $this->packFormat("guid wrong please retry..", 100008, $result);
         }
         return $result;
     }
@@ -252,14 +260,31 @@ class DoraRPCClient
     private function packEncode($data)
     {
         $sendStr = serialize($data);
-        $sendStr = pack('N', strlen($sendStr)) . $sendStr;
+        if (self::SW_DATASIGEN_FLAG == true) {
+            $signedcode = pack('N', crc32($sendStr . self::SW_DATASIGEN_SALT));
+            $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
+        } else {
+            $sendStr = pack('N', strlen($sendStr)) . $sendStr;
+        }
         return $sendStr;
     }
 
     private function packDecode($str)
     {
         $header = substr($str, 0, 4);
-        $result = substr($str, 4);
+
+        if (self::SW_DATASIGEN_FLAG == true) {
+
+            $signedcode = substr($str, 4, 4);
+            $result = substr($str, 8);
+
+            //check signed
+            if (pack("N", crc32($result . self::SW_DATASIGEN_SALT)) != $signedcode) {
+                return $this->packFormat("Signed check error!", 100010);
+            }
+        } else {
+            $result = substr($str, 4);
+        }
 
         $len = unpack("Nlen", $header);
         $result = unserialize($result);
