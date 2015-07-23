@@ -16,6 +16,8 @@ class DoraRPCClient
 
     const SW_CONTROL_CMD = 'SC';
 
+    const SW_RECIVE_TIMEOUT = 3.0; //timeout limit when recive
+
     //a flag to sure check the crc32
     //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
     const SW_DATASIGEN_FLAG = false;
@@ -78,7 +80,7 @@ class DoraRPCClient
                 'open_tcp_nodelay' => 1,
             ));
 
-            if (!$client->connect($this->ip, $this->port, 3.0)) {
+            if (!$client->connect($this->ip, $this->port, self::SW_RECIVE_TIMEOUT)) {
                 //connect fail
                 $errorcode = $client->errCode;
                 if ($errorcode == 0) {
@@ -162,7 +164,7 @@ class DoraRPCClient
 
         $sendData = $this->packEncode($packet);
 
-        $result = $this->send($sendData);
+        $result = $this->doRequest($sendData);
 
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
             return $this->packFormat("guid wrong please retry..", 100008, $result);
@@ -170,7 +172,7 @@ class DoraRPCClient
         return $result;
     }
 
-    private function send($sendData)
+    private function doRequest($sendData)
     {
         //get client obj
         try {
@@ -194,7 +196,7 @@ class DoraRPCClient
             }
 
             //resend the request
-            $ret = $client->send($sendData);
+            $ret = $client->doRequest($sendData);
         }
 
         if (!$ret) {
@@ -211,7 +213,13 @@ class DoraRPCClient
         }
 
         $result = $client->recv();
-        $result = $this->packDecode($result);
+        if($result!==false)
+        {
+            $result = $this->packDecode($result);
+        }else{
+            return $packet = $this->packFormat("the recive wrong or timeout", 100009);
+        }
+
 
         return $result;
     }

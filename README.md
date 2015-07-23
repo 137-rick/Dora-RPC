@@ -129,6 +129,7 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100003 you must fill the api parameter on you request
 > * 100007 socket error the recive packet length is wrong
 > * 100008 the return guid wrong may be the socket trasfer wrong data
+> * 100009 the recive wrong or timeout
 
 ----------
 
