@@ -13,6 +13,8 @@ abstract class DoraRPCServer
     const SW_SYNC_MULTI = 'SSM';
     const SW_RSYNC_MULTI = 'SRM';
 
+    const SW_CONTROL_CMD = 'SC';
+
     //a flag to sure check the crc32
     //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
     const SW_DATASIGEN_FLAG = false;
@@ -73,8 +75,19 @@ abstract class DoraRPCServer
 
     final function onWorkerStart($server, $worker_id)
     {
-        swoole_set_process_name("swworker|{$worker_id}");
+        $istask = $server->taskworker;
+        if ($istask) {
+            //worker
+            swoole_set_process_name("swworker|{$worker_id}");
+            $this->initTask();
+        } else {
+            //task
+            swoole_set_process_name("swtask|{$worker_id}");
+        }
+
     }
+
+    abstract public function initTask();
 
     final function onReceive(swoole_server $serv, $fd, $from_id, $data)
     {

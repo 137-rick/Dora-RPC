@@ -14,6 +14,8 @@ class DoraRPCClient
     const SW_SYNC_MULTI = 'SSM';
     const SW_RSYNC_MULTI = 'SRM';
 
+    const SW_CONTROL_CMD = 'SC';
+
     //a flag to sure check the crc32
     //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
     const SW_DATASIGEN_FLAG = false;
@@ -124,46 +126,7 @@ class DoraRPCClient
 
         $sendData = $this->packEncode($packet);
 
-        //get client obj
-        try {
-            $client = $this->getClientObj();
-        } catch (Exception $e) {
-            return $this->packFormat($e->getMessage(), $e->getCode());
-        }
-
-        $ret = $client->send($sendData);
-
-        //retry to reconnect && improve success percentage
-        if (!$ret) {
-            //clean up the broken client obj
-            $this->destroyCurrentObj();
-
-            //reconnect by get client obj
-            try {
-                $client = $this->getClientObj();
-            } catch (Exception $e) {
-                return $this->packFormat($e->getMessage(), $e->getCode());
-            }
-            //send again
-            $ret = $client->send($sendData);
-        }
-
-        if (!$ret) {
-            $errorcode = $client->errCode;
-            if ($errorcode == 0) {
-                $msg = "connect fail.check host dns.";
-                $errorcode = -1;
-                $packet = $this->packFormat($msg, $errorcode);
-            } else {
-                $msg = socket_strerror($errorcode);
-                $packet = $this->packFormat($msg, $errorcode);
-            }
-
-            return $packet;
-        }
-
-        $result = $client->recv();
-        $result = $this->packDecode($result);
+        $result = $this->send($sendData);
 
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
             return $this->packFormat("guid wront please retry..", 100100, $result);
@@ -199,6 +162,16 @@ class DoraRPCClient
 
         $sendData = $this->packEncode($packet);
 
+        $result = $this->send($sendData);
+
+        if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
+            return $this->packFormat("guid wrong please retry..", 100008, $result);
+        }
+        return $result;
+    }
+
+    private function send($sendData)
+    {
         //get client obj
         try {
             $client = $this->getClientObj();
@@ -238,12 +211,8 @@ class DoraRPCClient
         }
 
         $result = $client->recv();
-
         $result = $this->packDecode($result);
 
-        if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
-            return $this->packFormat("guid wrong please retry..", 100008, $result);
-        }
         return $result;
     }
 

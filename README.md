@@ -104,6 +104,10 @@ for ($i = 0; $i < 100000; $i++) {
     	function dowork($a){
     		return array("hehe"=>"ohyes");
     	}
+    	
+    	function initTask(){
+    	    //require_once() 你要加载的处理方法函数等 what's you want load (such as framework init)
+    	}
     }
     
     $res = new Server();
