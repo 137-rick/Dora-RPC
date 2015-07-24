@@ -66,6 +66,8 @@ pecl install swoole
 
 ###客户端(Client)
 ```
+include "dora-rpc/client.php";
+
 $obj = new DoraRPCClient( "127.0.0.1", 9567);
 for ($i = 0; $i < 100000; $i++) {
     //single && sync
@@ -86,27 +88,43 @@ for ($i = 0; $i < 100000; $i++) {
 
 ###服务端(Server)
 ```
-    //拷贝自 @果然 的测试代码
-    //copy from a frined demo code
-    include "swserver.php";
-    
-    class Server extends DoraRPCServer {
-        function initServer($server){
-           //the callback of the server init 附加服务初始化
-           //such as swoole atomic table or buffer 可以放置swoole的计数器，table等
-        }
-    	function dowork($param){
-    	    //process you logical 业务实际处理代码仍这里
-    	    //return the result 使用return返回处理结果
-    		return array("hehe"=>"ohyes");
-    	}
-    	
-    	function initTask($server, $worker_id){
-    	    //require_once() 你要加载的处理方法函数等 what's you want load (such as framework init)
-    	}
+include "dora-rpc/server.php";
+
+class Server extends DoraRPCServer {
+
+    //all of this config for optimize performance
+    //以下配置为优化服务性能用，请实际压测调试
+    protected  $externalConfig = array(
+
+        //to improve the accept performance ,suggest the number of cpu X 2
+        //如果想提高请求接收能力，更改这个，推荐cpu个数x2
+        'reactor_num' => 32,
+
+        //packet decode process,change by condition
+        //包处理进程，根据情况调整数量
+        'worker_num' => 40,
+
+        //the number of task logical process progcessor run you business code
+        //实际业务处理进程，根据需要进行调整
+        'task_worker_num' => 20,
+    );
+
+    function initServer($server){
+        //the callback of the server init 附加服务初始化
+        //such as swoole atomic table or buffer 可以放置swoole的计数器，table等
     }
-    
-    $res = new Server();
+    function dowork($param){
+        //process you logical 业务实际处理代码仍这里
+        //return the result 使用return返回处理结果
+        return array("hehe"=>"ohyes");
+    }
+
+    function initTask($server, $worker_id){
+        //require_once() 你要加载的处理方法函数等 what's you want load (such as framework init)
+    }
+}
+
+$res = new Server();
 ```
 
 ----------
@@ -136,13 +154,25 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * with example code (loop forever)
 
 ----------
-###Result
+###测试结果Result
 > * TPS 2100
 > * Response Time:0.02~0.04/sec
 > * CPU 10~25%
+以上还有很大优化空间
+There is still a lot of optimization space
+
+----------
+###Optimize performance性能优化
+```
+vim demoserver.php
+to see $externalConfig var
+and swoole offcial document
+
+如果想优化性能请参考以上文件的$externalConfig配置
+```
 
 ##更新历史(ChangeLog)
-> * 2015-07-24 增加两个抽象函数 initTask 当task进程启动的时候初始化使用 ,initServer 服务启动前附加启动时会调用这个，用于一些服务的初始化.增加重试次数
+> * 2015-07-24 增加两个抽象函数 initTask 当task进程启动的时候初始化使用 ,initServer 服务启动前附加启动时会调用这个，用于一些服务的初始化.增加请求失败重试指定次数功能
 > * 2015-06-23 修复client链接多个ip或端口导致的错误(#2)
 > * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
 

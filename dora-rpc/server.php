@@ -26,6 +26,10 @@ abstract class DoraRPCServer
     private $server = null;
     private $taskInfo = array();
 
+    //for extends class overwrite default config
+    //用于继承类覆盖默认配置
+    protected $externalConfig = array();
+
     abstract function initServer($server);
 
     final function __construct($ip = "0.0.0.0", $port = 9567)
@@ -48,15 +52,21 @@ abstract class DoraRPCServer
             'worker_num' => 40,
             'task_worker_num' => 20,
 
-            'max_request' => 0, #必须设置为0否则并发任务容易丢
+            'max_request' => 0, //必须设置为0否则并发任务容易丢,don't change this number
             'task_max_request' => 4000,
 
             'backlog' => 2000,
             'log_file' => '/tmp/sw_server.log',
             'task_tmpdir' => '/tmp/swtasktmp/',
 
-            //'daemonize' => 1,
+            'daemonize' => 1,
         );
+
+        //merge config
+        if (!empty($this->externalConfig)) {
+            $config = array_merge($config, $this->externalConfig);
+        }
+
         $this->server->set($config);
 
         $this->server->on('connect', array($this, 'onConnect'));

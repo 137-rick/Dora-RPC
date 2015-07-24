@@ -2,6 +2,24 @@
 include "dora-rpc/server.php";
 
 class Server extends DoraRPCServer {
+
+    //all of this config for optimize performance
+    //以下配置为优化服务性能用，请实际压测调试
+    protected  $externalConfig = array(
+
+        //to improve the accept performance ,suggest the number of cpu X 2
+        //如果想提高请求接收能力，更改这个，推荐cpu个数x2
+        'reactor_num' => 32,
+
+        //packet decode process,change by condition
+        //包处理进程，根据情况调整数量
+        'worker_num' => 40,
+
+        //the number of task logical process progcessor run you business code
+        //实际业务处理进程，根据需要进行调整
+        'task_worker_num' => 20,
+    );
+
     function initServer($server){
         //the callback of the server init 附加服务初始化
         //such as swoole atomic table or buffer 可以放置swoole的计数器，table等

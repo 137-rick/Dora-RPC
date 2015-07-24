@@ -38,6 +38,7 @@ class DoraRPCClient
     //md5(ip+port)=obj_array_key cache
     private $objkey;
 
+    //todo:multi ip server and random access
     function __construct($ip = "127.0.0.1", $port = 9567)
     {
         $this->ip = $ip;
