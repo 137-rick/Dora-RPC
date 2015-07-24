@@ -26,6 +26,8 @@ abstract class DoraRPCServer
     private $server = null;
     private $taskInfo = array();
 
+    abstract function initServer($server);
+
     final function __construct($ip = "0.0.0.0", $port = 9567)
     {
         $this->server = new swoole_server($ip, $port);
@@ -65,6 +67,9 @@ abstract class DoraRPCServer
         $this->server->on('close', array($this, 'onClose'));
         $this->server->on('finish', array($this, 'onFinish'));
 
+        //invoke the start
+        $this->initServer($this->server);
+
         $this->server->start();
     }
 
@@ -79,7 +84,7 @@ abstract class DoraRPCServer
         if ($istask) {
             //worker
             swoole_set_process_name("swworker|{$worker_id}");
-            $this->initTask();
+            $this->initTask($server, $worker_id);
         } else {
             //task
             swoole_set_process_name("swtask|{$worker_id}");
@@ -87,7 +92,7 @@ abstract class DoraRPCServer
 
     }
 
-    abstract public function initTask();
+    abstract public function initTask($server, $worker_id);
 
     final function onReceive(swoole_server $serv, $fd, $from_id, $data)
     {

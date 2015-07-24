@@ -1,17 +1,16 @@
 #Dora RPC
 ----------
 ##更新历史(ChangeLog)
-
+> * 2015-07-24 增加两个抽象函数 initTask 当task进程启动的时候初始化使用 ,initServer 服务启动前附加启动时会调用这个，用于一些服务的初始化.增加重试次数
 > * 2015-06-23 修复client链接多个ip或端口导致的错误(#2)
 > * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
 
 ----------
-
+> * 2015-07-24 add two abstract function: server start init(fn initServer) . task threads start init(fn initTask).and add retry parameter on the request
 > * 2015-06-23 Repair client link multiple ip or port error(#2);
 > * 2015-06024 Client Server have added SW_DATASIGEN_FLAG and SW_DATASIGEN_SALT parameters, if enabled supports message data signature, can strengthen security, there will increase a little performance loss, it is recommended everyone to customize a SALT
 
 ##简介(Introduction)
-
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
 > * 目前只提供PHP语言代码
 > * 后续有什么bug或者问题请提交Issue
@@ -79,7 +78,7 @@ pecl install swoole
 $obj = new DoraRPCClient();
 for ($i = 0; $i < 100000; $i++) {
     //single && sync
-    $ret = $obj->singleAPI("abc", array(234, $i), true);
+    $ret = $obj->singleAPI("abc", array(234, $i), false,1);
     var_dump($ret);
 
     //multi && rsync
@@ -87,7 +86,7 @@ for ($i = 0; $i < 100000; $i++) {
         "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
         "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
     );
-    $ret = $obj->multiAPI($data, false);
+    $ret = $obj->multiAPI($data, true,1);
     var_dump($ret);
 }
 ```
@@ -101,11 +100,17 @@ for ($i = 0; $i < 100000; $i++) {
     include "swserver.php";
     
     class Server extends DoraRPCServer {
-    	function dowork($a){
+        function initServer($server){
+           //the callback of the server init 附加服务初始化
+           //such as swoole atomic table or buffer 可以放置swoole的计数器，table等
+        }
+    	function dowork($param){
+    	    //process you logical 业务实际处理代码仍这里
+    	    //return the result 使用return返回处理结果
     		return array("hehe"=>"ohyes");
     	}
     	
-    	function initTask(){
+    	function initTask($server, $worker_id){
     	    //require_once() 你要加载的处理方法函数等 what's you want load (such as framework init)
     	}
     }

@@ -16,7 +16,9 @@ class DoraRPCClient
 
     const SW_CONTROL_CMD = 'SC';
 
-    const SW_RECIVE_TIMEOUT = 3.0; //timeout limit when recive
+    //timeout limit when recive
+    //接收数据的超时时长，超过了就会断开
+    const SW_RECIVE_TIMEOUT = 3.0;
 
     //a flag to sure check the crc32
     //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
@@ -105,9 +107,10 @@ class DoraRPCClient
      * @param string $api api地址
      * @param array $param 参数
      * @param bool $sync 阻塞等待结果
+     * @param int $retry 通讯错误时重试次数
      * @return mixed 返回单个请求结果
      */
-    public function singleAPI($name, $param, $sync = true)
+    public function singleAPI($name, $param, $sync = true, $retry = 0)
     {
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
         $packet = array(
@@ -128,7 +131,14 @@ class DoraRPCClient
 
         $sendData = $this->packEncode($packet);
 
-        $result = $this->send($sendData);
+        $result = $this->doRequest($sendData);
+
+        //retry when the send fail
+        while($result["code"]!== "0" && $retry > 0)
+        {
+            $result = $this->doRequest($sendData);
+            $retry--;
+        }
 
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
             return $this->packFormat("guid wront please retry..", 100100, $result);
@@ -144,10 +154,10 @@ class DoraRPCClient
      * )
      * @param array $params 提交参数 请指定key好方便区分对应结果，注意考虑到硬件资源有限并发请求不要超过50个
      * @param bool $sync 阻塞等待所有结果
+     * @param int $retry 通讯错误时重试次数
      * @return mixed 返回指定key结果
-     * @throws exception 并发超过50 会报错
      */
-    public function multiAPI($params, $sync = true)
+    public function multiAPI($params, $sync = true, $retry = 0)
     {
 
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
@@ -166,6 +176,13 @@ class DoraRPCClient
 
         $result = $this->doRequest($sendData);
 
+        //retry when the send fail
+        while($result["code"]!== "0" && $retry >0)
+        {
+            $result = $this->doRequest($sendData);
+            $retry--;
+        }
+
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
             return $this->packFormat("guid wrong please retry..", 100008, $result);
         }
@@ -182,7 +199,7 @@ class DoraRPCClient
         }
 
         $ret = $client->send($sendData);
-
+/*
         //retry once
         if (!$ret) {
 
@@ -199,10 +216,14 @@ class DoraRPCClient
             //resend the request
             $ret = $client->send($sendData);
         }
-
+*/
         //ok fail
         if (!$ret) {
             $errorcode = $client->errCode;
+
+            //destroy error obj
+            $this->destroyCurrentObj();
+
             if ($errorcode == 0) {
                 $msg = "connect fail.check host dns.";
                 $errorcode = -1;
@@ -218,12 +239,11 @@ class DoraRPCClient
         $result = $client->recv();
         //recive error check
         if ($result !== false) {
-            $result = $this->packDecode($result);
+            return $this->packDecode($result);
         } else {
-            return $packet = $this->packFormat("the recive wrong or timeout", 100009);
+            return $this->packFormat("the recive wrong or timeout", 100009);
         }
 
-        return $result;
     }
 
     private function packFormat($msg = "OK", $code = 0, $data = array())
