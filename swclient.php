@@ -183,6 +183,7 @@ class DoraRPCClient
 
         $ret = $client->send($sendData);
 
+        //retry once
         if (!$ret) {
 
             //destroy broken client
@@ -196,9 +197,10 @@ class DoraRPCClient
             }
 
             //resend the request
-            $ret = $client->doRequest($sendData);
+            $ret = $client->send($sendData);
         }
 
+        //ok fail
         if (!$ret) {
             $errorcode = $client->errCode;
             if ($errorcode == 0) {
@@ -212,14 +214,14 @@ class DoraRPCClient
             return $packet;
         }
 
+        //recive the response
         $result = $client->recv();
-        if($result!==false)
-        {
+        //recive error check
+        if ($result !== false) {
             $result = $this->packDecode($result);
-        }else{
+        } else {
             return $packet = $this->packFormat("the recive wrong or timeout", 100009);
         }
-
 
         return $result;
     }
