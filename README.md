@@ -1,15 +1,5 @@
 #Dora RPC
 ----------
-##更新历史(ChangeLog)
-> * 2015-07-24 增加两个抽象函数 initTask 当task进程启动的时候初始化使用 ,initServer 服务启动前附加启动时会调用这个，用于一些服务的初始化.增加重试次数
-> * 2015-06-23 修复client链接多个ip或端口导致的错误(#2)
-> * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
-
-----------
-> * 2015-07-24 add two abstract function: server start init(fn initServer) . task threads start init(fn initTask).and add retry parameter on the request
-> * 2015-06-23 Repair client link multiple ip or port error(#2);
-> * 2015-06024 Client Server have added SW_DATASIGEN_FLAG and SW_DATASIGEN_SALT parameters, if enabled supports message data signature, can strengthen security, there will increase a little performance loss, it is recommended everyone to customize a SALT
-
 ##简介(Introduction)
 用于复杂项目前后端分离，分离后项目都通过API工作可更好维护管理。
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
@@ -53,11 +43,11 @@ pecl install swoole
 ----------
 
 ##文件功能简介(File)
-###swclient.php
+###dora-rpc/client.php
 > * 使用最简单的方式实现的客户端
 > * an simple client
 
-###swserver.php
+###dora-rpc/server.php
 > * 使用最简单的方式实现的服务端
 > * 目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 > * 做这个只是为了减少大家启用RPC的开发时间
@@ -150,3 +140,13 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * TPS 2100
 > * Response Time:0.02~0.04/sec
 > * CPU 10~25%
+
+##更新历史(ChangeLog)
+> * 2015-07-24 增加两个抽象函数 initTask 当task进程启动的时候初始化使用 ,initServer 服务启动前附加启动时会调用这个，用于一些服务的初始化.增加重试次数
+> * 2015-06-23 修复client链接多个ip或端口导致的错误(#2)
+> * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
+
+----------
+> * 2015-07-24 add two abstract function: server start init(fn initServer) . task threads start init(fn initTask).and add retry parameter on the request
+> * 2015-06-23 Repair client link multiple ip or port error(#2);
+> * 2015-06024 Client Server have added SW_DATASIGEN_FLAG and SW_DATASIGEN_SALT parameters, if enabled supports message data signature, can strengthen security, there will increase a little performance loss, it is recommended everyone to customize a SALT
