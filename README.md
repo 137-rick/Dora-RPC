@@ -11,12 +11,13 @@
 > * 2015-06024 Client Server have added SW_DATASIGEN_FLAG and SW_DATASIGEN_SALT parameters, if enabled supports message data signature, can strengthen security, there will increase a little performance loss, it is recommended everyone to customize a SALT
 
 ##简介(Introduction)
+用于复杂项目前后端分离，分离后项目都通过API工作可更好维护管理。
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
 > * 目前只提供PHP语言代码
 > * 后续有什么bug或者问题请提交Issue
 
 ----------
-
+For complex projects separation, the project can be better maintained by the API project management.
 > * Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC
 > * Now support an simple PHP version
 > * If you find something wrong,please submit an issue
@@ -75,7 +76,7 @@ pecl install swoole
 
 ###客户端(Client)
 ```
-$obj = new DoraRPCClient();
+$obj = new DoraRPCClient( "127.0.0.1", 9567);
 for ($i = 0; $i < 100000; $i++) {
     //single && sync
     $ret = $obj->singleAPI("abc", array(234, $i), false,1);
