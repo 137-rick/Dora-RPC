@@ -68,7 +68,13 @@ pecl install swoole
 ```
 include "dora-rpc/client.php";
 
-$obj = new DoraRPCClient( "127.0.0.1", 9567);
+//app server config 
+$config = array(
+    array("ip"=>"127.0.0.1","port"=>9567),
+    //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
+);
+
+$obj = new DoraRPCClient($config);
 for ($i = 0; $i < 100000; $i++) {
     //single && sync
     $ret = $obj->singleAPI("abc", array(234, $i), false,1);
@@ -131,8 +137,8 @@ $res = new Server();
 
 ###以上代码测试方法
 include以上两个文件，使用命令行启动即可（客户端支持在apache nginx fpm内执行，服务端只支持命令行启动）
-> * php swclient.php
-> * php swserver.php
+> * php democlient.php
+> * php demoserver.php
 
 ----------
 
@@ -144,6 +150,7 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100007 socket error the recive packet length is wrong
 > * 100008 the return guid wrong may be the socket trasfer wrong data
 > * 100009 the recive wrong or timeout
+> * 100010 there is no server can connect
 
 ----------
 
@@ -170,13 +177,3 @@ and swoole offcial document
 
 如果想优化性能请参考以上文件的$externalConfig配置
 ```
-
-##更新历史(ChangeLog)
-> * 2015-07-24 增加两个抽象函数 initTask 当task进程启动的时候初始化使用 ,initServer 服务启动前附加启动时会调用这个，用于一些服务的初始化.增加请求失败重试指定次数功能
-> * 2015-06-23 修复client链接多个ip或端口导致的错误(#2)
-> * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
-
-----------
-> * 2015-07-24 add two abstract function: server start init(fn initServer) . task threads start init(fn initTask).and add retry parameter on the request
-> * 2015-06-23 Repair client link multiple ip or port error(#2);
-> * 2015-06024 Client Server have added SW_DATASIGEN_FLAG and SW_DATASIGEN_SALT parameters, if enabled supports message data signature, can strengthen security, there will increase a little performance loss, it is recommended everyone to customize a SALT

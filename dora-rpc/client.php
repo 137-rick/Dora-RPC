@@ -7,7 +7,6 @@
  */
 class DoraRPCClient
 {
-
     const SW_SYNC_SINGLE = 'SSS';
     const SW_RSYNC_SINGLE = 'SRS';
 
@@ -31,48 +30,58 @@ class DoraRPCClient
     //client obj pool
     private static $client = array();
 
-    //current obj ip port
-    private $ip;
-    private $port;
+    //current using client obj key on static client array
+    private $currentClientKey = "";
 
-    //md5(ip+port)=obj_array_key cache
-    private $objkey;
+    //client config array
+    private $serverConfig = array();
 
-    //todo:multi ip server and random access
-    function __construct($ip = "127.0.0.1", $port = 9567)
+    //when connect fail will block error config
+    private $serverConfigBlock = array();
+
+    function __construct($serverConfig)
     {
-        $this->ip = $ip;
-        $this->port = $port;
+        if (count($serverConfig) == 0) {
+            echo "cant found config on the Dora RPC..";
+            throw new Exception("please set the config param on init Dora RPC", -1);
+        }
+        $this->serverConfig = $serverConfig;
     }
 
-    //get current client obj
-    private function getCurrentObjKey()
+    //random get config key
+    private function getConfigObjKey()
     {
-        //to prevent wast add an key cache
-        if ($this->objkey == "") {
-            $ip = $this->ip;
-            $port = $this->port;
 
-            $key = $ip . "_" . $port;
-            $this->objkey = $key;
+        // if there is no config can use clean up the block list
+        if (count($this->serverConfig) <= count($this->serverConfigBlock)) {
+            //clean up the block list
+            $this->serverConfigBlock = array();
         }
 
-        return $this->objkey;
-    }
+        do {
+            //get one config by random
+            $key = array_rand($this->serverConfig);
 
-    //destroy current client
-    private function destroyCurrentObj()
-    {
-        $key = $this->getCurrentObjKey();
-        unset(self::$client[$key]);
+            //if not on the block list.
+            if (!isset($this->serverConfigBlock[$key])) {
+                return $key;
+            }
+
+        } while (count($this->serverConfig) > count($this->serverConfigBlock));
+
+        throw new Exception("there is no one server can connect", 100010);
     }
 
     //get current client
     private function getClientObj()
     {
-        $key = $this->getCurrentObjKey();
+        $key = $this->getConfigObjKey();
+        $clientKey = $this->serverConfig[$key]["ip"] . "_" . $this->serverConfig[$key]["port"];
 
-        if (!isset(self::$client[$key])) {
+        //set the current client key
+        $this->currentClientKey = $clientKey;
+
+        if (!isset(self::$client[$clientKey])) {
             $client = new swoole_client(SWOOLE_SOCK_TCP | SWOOLE_KEEP);
             $client->set(array(
                 'open_length_check' => 1,
@@ -83,24 +92,26 @@ class DoraRPCClient
                 'open_tcp_nodelay' => 1,
             ));
 
-            if (!$client->connect($this->ip, $this->port, self::SW_RECIVE_TIMEOUT)) {
+            if (!$client->connect($this->serverConfig[$key]["ip"], $this->serverConfig[$key]["port"], self::SW_RECIVE_TIMEOUT)) {
                 //connect fail
-                $errorcode = $client->errCode;
-                if ($errorcode == 0) {
+                $errorCode = $client->errCode;
+                if ($errorCode == 0) {
                     $msg = "connect fail.check host dns.";
-                    $errorcode = -1;
+                    $errorCode = -1;
                 } else {
-                    $msg = socket_strerror($errorcode);
+                    $msg = socket_strerror($errorCode);
                 }
 
-                throw new Exception($msg, $errorcode);
+                //put the fail connect config to block list
+                $this->serverConfigBlock[$key] = 1;
+                throw new Exception($msg, $errorCode);
             }
 
-            self::$client[$key] = $client;
+            self::$client[$clientKey] = $client;
         }
 
         //success
-        return self::$client[$key];
+        return self::$client[$clientKey];
     }
 
     /**
@@ -135,8 +146,7 @@ class DoraRPCClient
         $result = $this->doRequest($sendData);
 
         //retry when the send fail
-        while($result["code"]!== "0" && $retry > 0)
-        {
+        while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
             $result = $this->doRequest($sendData);
             $retry--;
         }
@@ -178,8 +188,7 @@ class DoraRPCClient
         $result = $this->doRequest($sendData);
 
         //retry when the send fail
-        while($result["code"]!== "0" && $retry >0)
-        {
+        while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
             $result = $this->doRequest($sendData);
             $retry--;
         }
@@ -200,30 +209,13 @@ class DoraRPCClient
         }
 
         $ret = $client->send($sendData);
-/*
-        //retry once
-        if (!$ret) {
 
-            //destroy broken client
-            $this->destroyCurrentObj();
-
-            //reconnect
-            try {
-                $client = $this->getClientObj();
-            } catch (Exception $e) {
-                return $this->packFormat($e->getMessage(), $e->getCode());
-            }
-
-            //resend the request
-            $ret = $client->send($sendData);
-        }
-*/
         //ok fail
         if (!$ret) {
             $errorcode = $client->errCode;
 
-            //destroy error obj
-            $this->destroyCurrentObj();
+            //destroy error client obj to make reconncet
+            unset(self::$client[$this->currentClientKey]);
 
             if ($errorcode == 0) {
                 $msg = "connect fail.check host dns.";
