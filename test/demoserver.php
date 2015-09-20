@@ -18,7 +18,12 @@ class Server extends \DoraRPC\Server\Server {
         //the number of task logical process progcessor run you business code
         //实际业务处理进程，根据需要进行调整
         'task_worker_num' => 20,
+
 		'daemonize' => false,
+
+        'log_file' =>'/tmp/sw_server.log',
+
+        'task_tmpdir' => '/tmp/swtasktmp/',
     );
 
     function initServer($server){

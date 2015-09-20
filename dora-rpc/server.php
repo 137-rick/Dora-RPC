@@ -208,7 +208,15 @@ abstract class server
             return $data;
         }
 
-        return $data;
+        //fixed the result more than 8k timeout bug
+        $data = serialize($data);
+        if (strlen($data) > 8000) {
+            $temp_file = tempnam(sys_get_temp_dir(), 'swmore8k');
+            file_put_contents($temp_file, $data);
+            return '$$$$$$$$' . $temp_file;
+        } else {
+            return $data;
+        }
     }
 
     abstract public function doWork($param);
@@ -227,6 +235,14 @@ abstract class server
 
     final public function onFinish($serv, $task_id, $data)
     {
+        //fixed the result more than 8k timeout bug
+        if (strpos($data, '$$$$$$$$') === 0) {
+            $tmp_path = substr($data, 8);
+            $data = file_get_contents($tmp_path);
+            unlink($tmp_path);
+        }
+        $data = unserialize($data);
+
         $fd = $data["fd"];
 
         if (!isset($this->taskInfo[$fd]) || !$data["result"]) {
@@ -246,7 +262,7 @@ abstract class server
                 $packet = $this->packFormat("OK", 0, $data["result"]);
                 $packet["guid"] = $this->taskInfo[$fd]["guid"];
                 $packet = $this->packEncode($packet);
-                
+
                 //sys_get_temp_dir
                 $serv->send($fd, $packet);
                 unset($this->taskInfo[$fd]);
