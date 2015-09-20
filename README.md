@@ -119,7 +119,7 @@ class Server extends DoraRPCServer {
         //the callback of the server init 附加服务初始化
         //such as swoole atomic table or buffer 可以放置swoole的计数器，table等
     }
-    function dowork($param){
+    function doWork($param){
         //process you logical 业务实际处理代码仍这里
         //return the result 使用return返回处理结果
         return array("hehe"=>"ohyes");
