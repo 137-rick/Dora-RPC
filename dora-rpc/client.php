@@ -1,11 +1,12 @@
 <?php
+namespace DoraRPC\Client;
 
 /**
  * Class DoraRPCClient
  * https://github.com/xcl3721/Dora-RPC
  * by 蓝天 http://weibo.com/thinkpc
  */
-class DoraRPCClient
+class client
 {
     const SW_SYNC_SINGLE = 'SSS';
     const SW_RSYNC_SINGLE = 'SRS';
@@ -39,7 +40,7 @@ class DoraRPCClient
     //when connect fail will block error config
     private $serverConfigBlock = array();
 
-    function __construct($serverConfig)
+    public function __construct($serverConfig)
     {
         if (count($serverConfig) == 0) {
             echo "cant found config on the Dora RPC..";
@@ -82,7 +83,7 @@ class DoraRPCClient
         $this->currentClientKey = $clientKey;
 
         if (!isset(self::$client[$clientKey])) {
-            $client = new swoole_client(SWOOLE_SOCK_TCP | SWOOLE_KEEP);
+            $client = new \swoole_client(SWOOLE_SOCK_TCP | SWOOLE_KEEP);
             $client->set(array(
                 'open_length_check' => 1,
                 'package_length_type' => 'N',
@@ -116,11 +117,11 @@ class DoraRPCClient
 
     /**
      * 单api请求
-     * @param string $api api地址
-     * @param array $param 参数
-     * @param bool $sync 阻塞等待结果
-     * @param int $retry 通讯错误时重试次数
-     * @return mixed 返回单个请求结果
+     * @param  string $name  api地址
+     * @param  array  $param 参数
+     * @param  bool   $sync  阻塞等待结果
+     * @param  int    $retry 通讯错误时重试次数
+     * @return mixed  返回单个请求结果
      */
     public function singleAPI($name, $param, $sync = true, $retry = 0)
     {
@@ -154,6 +155,7 @@ class DoraRPCClient
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
             return $this->packFormat("guid wront please retry..", 100100, $result);
         }
+
         return $result;
     }
 
@@ -163,9 +165,9 @@ class DoraRPCClient
      *  "api_1117"=>array("name"=>"apiname1",“param”=>array("id"=>1117)),
      *  "api_2"=>array("name"=>"apiname2","param"=>array("id"=>2)),
      * )
-     * @param array $params 提交参数 请指定key好方便区分对应结果，注意考虑到硬件资源有限并发请求不要超过50个
-     * @param bool $sync 阻塞等待所有结果
-     * @param int $retry 通讯错误时重试次数
+     * @param  array $params 提交参数 请指定key好方便区分对应结果，注意考虑到硬件资源有限并发请求不要超过50个
+     * @param  bool  $sync   阻塞等待所有结果
+     * @param  int   $retry  通讯错误时重试次数
      * @return mixed 返回指定key结果
      */
     public function multiAPI($params, $sync = true, $retry = 0)
@@ -196,6 +198,7 @@ class DoraRPCClient
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
             return $this->packFormat("guid wrong please retry..", 100008, $result);
         }
+
         return $result;
     }
 
@@ -225,6 +228,7 @@ class DoraRPCClient
                 $msg = socket_strerror($errorcode);
                 $packet = $this->packFormat($msg, $errorcode);
             }
+
             return $packet;
         }
 
@@ -246,6 +250,7 @@ class DoraRPCClient
             "msg" => $msg,
             "data" => $data,
         );
+
         return $pack;
     }
 
@@ -258,6 +263,7 @@ class DoraRPCClient
         } else {
             $sendStr = pack('N', strlen($sendStr)) . $sendStr;
         }
+
         return $sendStr;
     }
 
@@ -284,8 +290,7 @@ class DoraRPCClient
         return $this->packFormat("OK", 0, $result);
     }
 
-
-    function __destruct()
+    public function __destruct()
     {
 
     }

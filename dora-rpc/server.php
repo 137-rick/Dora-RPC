@@ -1,11 +1,12 @@
 <?php
+namespace DoraRPC\Server;
 
 /**
  * Class DoraRPCServer
  * https://github.com/xcl3721/Dora-RPC
  * by 蓝天 http://weibo.com/thinkpc
  */
-abstract class DoraRPCServer
+abstract class server
 {
     const SW_SYNC_SINGLE = 'SSS';
     const SW_RSYNC_SINGLE = 'SRS';
@@ -30,11 +31,11 @@ abstract class DoraRPCServer
     //用于继承类覆盖默认配置
     protected $externalConfig = array();
 
-    abstract function initServer($server);
+    abstract public function initServer($server);
 
-    final function __construct($ip = "0.0.0.0", $port = 9567)
+    final public function __construct($ip = "0.0.0.0", $port = 9567)
     {
-        $this->server = new swoole_server($ip, $port);
+        $this->server = new \swoole_server($ip, $port);
         $config = array(
             'open_length_check' => 1,
             'dispatch_mode' => 3,
@@ -83,12 +84,12 @@ abstract class DoraRPCServer
         $this->server->start();
     }
 
-    final function onConnect($serv, $fd)
+    final public function onConnect($serv, $fd)
     {
         $this->taskInfo[$fd] = array();
     }
 
-    final function onWorkerStart($server, $worker_id)
+    final public function onWorkerStart($server, $worker_id)
     {
         $istask = $server->taskworker;
         if ($istask) {
@@ -104,13 +105,14 @@ abstract class DoraRPCServer
 
     abstract public function initTask($server, $worker_id);
 
-    final function onReceive(swoole_server $serv, $fd, $from_id, $data)
+    final public function onReceive(\swoole_server $serv, $fd, $from_id, $data)
     {
         $reqa = $this->packDecode($data);
         #decode error
         if ($reqa["code"] != 0) {
             $req = $this->packEncode($reqa);
             $serv->send($fd, $req);
+
             return true;
         } else {
             $req = $reqa["data"];
@@ -121,6 +123,7 @@ abstract class DoraRPCServer
             $pack = $this->packFormat("param api is empty", 100003);
             $pack = $this->packEncode($pack);
             $serv->send($fd, $pack);
+
             return true;
         }
 
@@ -139,6 +142,7 @@ abstract class DoraRPCServer
                 $taskid = $serv->task($task);
 
                 $this->taskInfo[$fd]["task"][$taskid] = "one";
+
                 return true;
                 break;
             case self::SW_RSYNC_SINGLE:
@@ -151,6 +155,7 @@ abstract class DoraRPCServer
                 $serv->send($fd, $pack);
 
                 unset($this->taskInfo[$fd]);
+
                 return true;
 
                 break;
@@ -184,13 +189,14 @@ abstract class DoraRPCServer
 
                 $serv->send($fd, $pack);
                 unset($this->taskInfo[$fd]);
+
                 return true;
         }
 
         return true;
     }
 
-    final function onTask($serv, $task_id, $from_id, $data)
+    final public function onTask($serv, $task_id, $from_id, $data)
     {
         //$data["result"] = array("yes" => "ok");
         swoole_set_process_name("phptask|{$task_id}|" . $data["api"]["name"] . "");
@@ -198,15 +204,17 @@ abstract class DoraRPCServer
             $data["result"] = $this->doWork($data);
         } catch (Exception $e) {
             $data["result"] = $this->packFormat($e->getMessage(), $e->getCode());
+
             return $data;
         }
+
         return $data;
     }
 
     abstract public function doWork($param);
 
 
-    final function onWorkerError(swoole_server $serv, $worker_id, $worker_pid, $exit_code)
+    final public function onWorkerError(\swoole_server $serv, $worker_id, $worker_pid, $exit_code)
     {
         $this->log("WorkerError", array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
     }
@@ -217,12 +225,13 @@ abstract class DoraRPCServer
         file_put_contents("/tmp/" . $file, $result, FILE_APPEND);
     }
 
-    final function onFinish($serv, $task_id, $data)
+    final public function onFinish($serv, $task_id, $data)
     {
         $fd = $data["fd"];
 
         if (!isset($this->taskInfo[$fd]) || !$data["result"]) {
             unset($this->taskInfo[$fd]);
+
             return true;
         }
 
@@ -239,6 +248,7 @@ abstract class DoraRPCServer
                 $packet = $this->packEncode($packet);
                 $serv->send($fd, $packet);
                 unset($this->taskInfo[$fd]);
+
                 return true;
                 break;
 
@@ -249,6 +259,7 @@ abstract class DoraRPCServer
                     $packet = $this->packEncode($packet);
                     $serv->send($fd, $packet);
                     unset($this->taskInfo[$fd]);
+
                     return true;
                 } else {
                     return true;
@@ -257,13 +268,14 @@ abstract class DoraRPCServer
 
             default:
                 unset($this->taskInfo[$fd]);
+
                 return true;
                 break;
         }
 
     }
 
-    final function onClose(swoole_server $server, $fd, $from_id)
+    final public function onClose(\swoole_server $server, $fd, $from_id)
     {
         unset($this->taskInfo[$fd]);
     }
@@ -305,10 +317,10 @@ abstract class DoraRPCServer
             $result = substr($str, 4);
         }
 
-
         if ($len != strlen($result)) {
             //结果长度不对
             echo "error length...\n";
+
             return $this->packFormat("包长度非法", 100007);
         }
         $result = unserialize($result);
@@ -323,14 +335,13 @@ abstract class DoraRPCServer
             "msg" => $msg,
             "data" => $data,
         );
+
         return $pack;
     }
 
-
-    final function __destruct()
+    final public function __destruct()
     {
         $this->server->shutdown();
     }
-
 
 }

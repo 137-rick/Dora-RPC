@@ -1,7 +1,7 @@
 <?php
-include "dora-rpc/server.php";
+include "../dora-rpc/server.php";
 
-class Server extends DoraRPCServer {
+class Server extends \DoraRPC\Server\Server {
 
     //all of this config for optimize performance
     //以下配置为优化服务性能用，请实际压测调试
@@ -18,6 +18,7 @@ class Server extends DoraRPCServer {
         //the number of task logical process progcessor run you business code
         //实际业务处理进程，根据需要进行调整
         'task_worker_num' => 20,
+		'daemonize' => false,
     );
 
     function initServer($server){
