@@ -44,7 +44,7 @@ class client
     {
         if (count($serverConfig) == 0) {
             echo "cant found config on the Dora RPC..";
-            throw new Exception("please set the config param on init Dora RPC", -1);
+            throw new \Exception("please set the config param on init Dora RPC", -1);
         }
         $this->serverConfig = $serverConfig;
     }
@@ -70,7 +70,7 @@ class client
 
         } while (count($this->serverConfig) > count($this->serverConfigBlock));
 
-        throw new Exception("there is no one server can connect", 100010);
+        throw new \Exception("there is no one server can connect", 100010);
     }
 
     //get current client
@@ -105,7 +105,7 @@ class client
 
                 //put the fail connect config to block list
                 $this->serverConfigBlock[$key] = 1;
-                throw new Exception($msg, $errorCode);
+                throw new \Exception($msg, $errorCode);
             }
 
             self::$client[$clientKey] = $client;
@@ -207,7 +207,7 @@ class client
         //get client obj
         try {
             $client = $this->getClientObj();
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return $this->packFormat($e->getMessage(), $e->getCode());
         }
 
