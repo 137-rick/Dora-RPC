@@ -246,7 +246,7 @@ abstract class server
                 $packet = $this->packFormat("OK", 0, $data["result"]);
                 $packet["guid"] = $this->taskInfo[$fd]["guid"];
                 $packet = $this->packEncode($packet);
-                echo "strlen:".strlen($packet)."\r\n";
+                
                 //sys_get_temp_dir
                 $serv->send($fd, $packet);
                 unset($this->taskInfo[$fd]);

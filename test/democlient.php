@@ -9,7 +9,7 @@ $config = array(
 $obj = new \DoraRPC\Client\Client($config);
 for ($i = 0; $i < 100000; $i++) {
     //single && sync
-    $ret = $obj->singleAPI("abc", array(234, $i), false, 1);
+    $ret = $obj->singleAPI("abc", array(234, $i), true, 1);
     var_dump($ret);
 
     //multi && rsync
