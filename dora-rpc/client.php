@@ -2,11 +2,11 @@
 namespace DoraRPC\Client;
 
 /**
- * Class DoraRPCClient
+ * Class Client
  * https://github.com/xcl3721/Dora-RPC
  * by 蓝天 http://weibo.com/thinkpc
  */
-class client
+class Client
 {
     const SW_SYNC_SINGLE = 'SSS';
     const SW_RSYNC_SINGLE = 'SRS';

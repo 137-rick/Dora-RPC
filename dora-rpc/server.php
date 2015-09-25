@@ -2,11 +2,11 @@
 namespace DoraRPC\Server;
 
 /**
- * Class DoraRPCServer
+ * Class Server
  * https://github.com/xcl3721/Dora-RPC
  * by 蓝天 http://weibo.com/thinkpc
  */
-abstract class server
+abstract class Server
 {
     const SW_SYNC_SINGLE = 'SSS';
     const SW_RSYNC_SINGLE = 'SRS';
@@ -92,13 +92,13 @@ abstract class server
     final public function onWorkerStart($server, $worker_id)
     {
         $istask = $server->taskworker;
-        if ($istask) {
+        if (!$istask) {
             //worker
-            swoole_set_process_name("swworker|{$worker_id}");
+            swoole_set_process_name("phpworker|{$worker_id}");
             $this->initTask($server, $worker_id);
         } else {
             //task
-            swoole_set_process_name("swtask|{$worker_id}");
+            swoole_set_process_name("phptask|{$worker_id}");
         }
 
     }
