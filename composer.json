@@ -11,7 +11,7 @@
   },
   "autoload": {
     "psr-0": {
-      "dora": "dora-rpc/"
+      "DoraRPC": "dora-rpc/"
     }
   },
   "authors": [
