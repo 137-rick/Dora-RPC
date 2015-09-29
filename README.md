@@ -38,6 +38,24 @@ For complex projects separation, the project can be better maintained by the API
 ##Installation
 ```
 pecl install swoole
+
+vim composer.json
+added:
+{
+    "name": "xx",
+    "description": "xxx",
+    "require": {
+        "xcl3721/dora-rpc": "dev-master"
+    },
+"repositories": [
+        {"type": "composer", "url": "http://packagist.phpcomposer.com"},
+        {"packagist": false}
+    ]
+}
+
+:wq
+composer update
+
 ```
 
 ----------
