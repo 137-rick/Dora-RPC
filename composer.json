@@ -6,7 +6,7 @@
     "Dora-RPC"
   ],
   "license": "Apache",
-  "homepage": "https://github.com/xcl3721/Dora-RPC",
+  "homepage": "https://github.com/xcl3721/dora-rpc",
   "require": {
     "php": ">=5.4.30"
   },
