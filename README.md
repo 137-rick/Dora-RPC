@@ -177,3 +177,7 @@ and swoole offcial document
 
 如果想优化性能请参考以上文件的$externalConfig配置
 ```
+
+----------
+###License授权
+MIT

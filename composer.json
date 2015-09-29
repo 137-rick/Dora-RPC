@@ -5,6 +5,7 @@
     "RPC",
     "dora-rpc"
   ],
+  "license": "MIT",
   "homepage": "https://github.com/xcl3721/Dora-RPC",
   "require": {
     "php": ">=5.4.30"
