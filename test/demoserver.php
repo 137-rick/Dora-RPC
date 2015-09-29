@@ -1,5 +1,5 @@
 <?php
-include "../dora-rpc/server.php";
+include "../src/server.php";
 
 class Server extends \DoraRPC\Server\Server {
 
