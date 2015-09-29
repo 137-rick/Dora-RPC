@@ -1,5 +1,5 @@
 {
-  "name": "xcl3721/Dora-RPC",
+  "name": "xcl3721/dora-rpc",
   "description": "Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC",
   "keywords": [
     "RPC",
