@@ -180,4 +180,4 @@ and swoole offcial document
 
 ----------
 ###License授权
-MIT
+Apache
