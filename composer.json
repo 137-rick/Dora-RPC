@@ -1,18 +1,18 @@
 {
-  "name": "xcl3721/dora-rpc",
+  "name": "xcl3721/DoraRPC",
   "description": "Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC",
   "keywords": [
     "RPC",
-    "dora-rpc"
+    "Dora-RPC"
   ],
   "license": "Apache",
-  "homepage": "https://github.com/xcl3721/Dora-RPC",
+  "homepage": "https://github.com/xcl3721/DoraRPC",
   "require": {
     "php": ">=5.4.30"
   },
   "autoload": {
     "psr-0": {
-      "DoraRPC\\": "dora-rpc/dora-rpc/"
+      "DoraRPC\\": "src"
     }
   },
   "authors": [
