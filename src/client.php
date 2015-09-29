@@ -1,5 +1,5 @@
 <?php
-namespace DoraRPC\Client;
+namespace DoraRPC;
 
 /**
  * Class Client

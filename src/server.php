@@ -1,5 +1,5 @@
 <?php
-namespace DoraRPC\Server;
+namespace DoraRPC;
 
 /**
  * Class Server

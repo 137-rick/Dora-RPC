@@ -1,7 +1,7 @@
 <?php
 include "../src/server.php";
 
-class Server extends \DoraRPC\Server\Server {
+class Server extends \DoraRPC\Server {
 
     //all of this config for optimize performance
     //以下配置为优化服务性能用，请实际压测调试
