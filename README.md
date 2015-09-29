@@ -45,7 +45,7 @@ added:
     "name": "xx",
     "description": "xxx",
     "require": {
-        "xcl3721/dora-rpc": "dev-master"
+        "xcl3721/dora-rpc": ">=0.3.4"
     },
 "repositories": [
         {"type": "composer", "url": "http://packagist.phpcomposer.com"},
