@@ -46,11 +46,7 @@ added:
     "description": "xxx",
     "require": {
         "xcl3721/dora-rpc": ">=0.3.4"
-    },
-"repositories": [
-        {"type": "composer", "url": "http://packagist.phpcomposer.com"},
-        {"packagist": false}
-    ]
+    }
 }
 
 :wq
