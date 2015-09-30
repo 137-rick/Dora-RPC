@@ -134,7 +134,7 @@ abstract class Server
                 $task["api"] = $this->taskInfo[$fd]["api"]["one"];
                 $serv->task($task);
 
-                $pack = $this->packFormat("已经成功投递", 100001);
+                $pack = $this->packFormat("transfer success.已经成功投递", 100001);
                 $pack["guid"] = $task["guid"];
                 $pack = $this->packEncode($pack);
                 $serv->send($fd, $pack);
@@ -159,7 +159,7 @@ abstract class Server
                     $task["api"] = $this->taskInfo[$fd]["api"][$k];
                     $serv->task($task);
                 }
-                $pack = $this->packFormat("已经成功投递", 100001);
+                $pack = $this->packFormat("transfer success.已经成功投递", 100001);
                 $pack["guid"] = $task["guid"];
                 $pack = $this->packEncode($pack);
 
@@ -169,7 +169,7 @@ abstract class Server
                 return true;
                 break;
             default:
-                $pack = $this->packFormat("未知类型任务", 100002);
+                $pack = $this->packFormat("unknow task type.未知类型任务", 100002);
                 $pack = $this->packEncode($pack);
 
                 $serv->send($fd, $pack);
@@ -324,7 +324,7 @@ abstract class Server
             //结果长度不对
             echo "error length...\n";
 
-            return $this->packFormat("包长度非法", 100007);
+            return $this->packFormat("packet length invalid 包长度非法", 100007);
         }
         $result = unserialize($result);
 
