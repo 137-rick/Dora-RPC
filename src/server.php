@@ -8,21 +8,6 @@ namespace DoraRPC;
  */
 abstract class Server
 {
-    const SW_SYNC_SINGLE = 'SSS';
-    const SW_RSYNC_SINGLE = 'SRS';
-
-    const SW_SYNC_MULTI = 'SSM';
-    const SW_RSYNC_MULTI = 'SRM';
-
-    const SW_CONTROL_CMD = 'SC';
-
-    //a flag to sure check the crc32
-    //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
-    const SW_DATASIGEN_FLAG = false;
-
-    //salt to mixed the crc result
-    //上面开关开启后，用于加密串混淆结果，请保持客户端和服务端一致
-    const SW_DATASIGEN_SALT = "=&$*#@(*&%(@";
 
     private $server = null;
     private $taskInfo = array();
@@ -137,7 +122,7 @@ abstract class Server
 
         switch ($this->taskInfo[$fd]["type"]) {
 
-            case self::SW_SYNC_SINGLE:
+            case DoraConst::SW_SYNC_SINGLE:
                 $task["api"] = $this->taskInfo[$fd]["api"]["one"];
                 $taskid = $serv->task($task);
 
@@ -145,7 +130,7 @@ abstract class Server
 
                 return true;
                 break;
-            case self::SW_RSYNC_SINGLE:
+            case DoraConst::SW_RSYNC_SINGLE:
                 $task["api"] = $this->taskInfo[$fd]["api"]["one"];
                 $serv->task($task);
 
@@ -160,7 +145,7 @@ abstract class Server
 
                 break;
 
-            case self::SW_SYNC_MULTI:
+            case DoraConst::SW_SYNC_MULTI:
                 foreach ($req["api"] as $k => $v) {
                     $task["api"] = $this->taskInfo[$fd]["api"][$k];
                     $taskid = $serv->task($task);
@@ -169,7 +154,7 @@ abstract class Server
 
                 return true;
                 break;
-            case self::SW_RSYNC_MULTI:
+            case DoraConst::SW_RSYNC_MULTI:
                 foreach ($req["api"] as $k => $v) {
                     $task["api"] = $this->taskInfo[$fd]["api"][$k];
                     $serv->task($task);
@@ -258,7 +243,7 @@ abstract class Server
 
         switch ($data["type"]) {
 
-            case self::SW_SYNC_SINGLE:
+            case DoraConst::SW_SYNC_SINGLE:
                 $packet = $this->packFormat("OK", 0, $data["result"]);
                 $packet["guid"] = $this->taskInfo[$fd]["guid"];
                 $packet = $this->packEncode($packet);
@@ -270,7 +255,7 @@ abstract class Server
                 return true;
                 break;
 
-            case self::SW_SYNC_MULTI:
+            case DoraConst::SW_SYNC_MULTI:
                 if (count($this->taskInfo[$fd]["task"]) == 0) {
                     $packet = $this->packFormat("OK", 0, $this->taskInfo[$fd]["result"]);
                     $packet["guid"] = $this->taskInfo[$fd]["guid"];
@@ -303,8 +288,8 @@ abstract class Server
     {
         $sendStr = serialize($data);
 
-        if (self::SW_DATASIGEN_FLAG == true) {
-            $signedcode = pack('N', crc32($sendStr . self::SW_DATASIGEN_SALT));
+        if (DoraConst::SW_DATASIGEN_FLAG == true) {
+            $signedcode = pack('N', crc32($sendStr . DoraConst::SW_DATASIGEN_SALT));
             $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
         } else {
             $sendStr = pack('N', strlen($sendStr)) . $sendStr;
@@ -319,13 +304,13 @@ abstract class Server
         $len = unpack("Nlen", $header);
         $len = $len["len"];
 
-        if (self::SW_DATASIGEN_FLAG == true) {
+        if (DoraConst::SW_DATASIGEN_FLAG == true) {
 
             $signedcode = substr($str, 4, 4);
             $result = substr($str, 8);
 
             //check signed
-            if (pack("N", crc32($result . self::SW_DATASIGEN_SALT)) != $signedcode) {
+            if (pack("N", crc32($result . DoraConst::SW_DATASIGEN_SALT)) != $signedcode) {
                 return $this->packFormat("Signed check error!", 100010);
             }
 

@@ -8,25 +8,6 @@ namespace DoraRPC;
  */
 class Client
 {
-    const SW_SYNC_SINGLE = 'SSS';
-    const SW_RSYNC_SINGLE = 'SRS';
-
-    const SW_SYNC_MULTI = 'SSM';
-    const SW_RSYNC_MULTI = 'SRM';
-
-    const SW_CONTROL_CMD = 'SC';
-
-    //timeout limit when recive
-    //接收数据的超时时长，超过了就会断开
-    const SW_RECIVE_TIMEOUT = 3.0;
-
-    //a flag to sure check the crc32
-    //是否开启数据签名，服务端客户端都需要打开，打开后可以强化安全，但会降低一点性能
-    const SW_DATASIGEN_FLAG = false;
-
-    //salt to mixed the crc result
-    //上面开关开启后，用于加密串混淆结果，请保持客户端和服务端一致
-    const SW_DATASIGEN_SALT = "=&$*#@(*&%(@";
 
     //client obj pool
     private static $client = array();
@@ -50,7 +31,7 @@ class Client
     }
 
     //random get config key
-    private function getConfigObjKey()
+    private function getConfigObjKey($ip = "", $port = "")
     {
 
         // if there is no config can use clean up the block list
@@ -59,26 +40,46 @@ class Client
             $this->serverConfigBlock = array();
         }
 
-        do {
-            //get one config by random
-            $key = array_rand($this->serverConfig);
+        //if not specified the ip and port random get one
+        if ($ip == "" && $port == "") {
+            do {
+                //get one config by random
+                $key = array_rand($this->serverConfig);
 
-            //if not on the block list.
-            if (!isset($this->serverConfigBlock[$key])) {
-                return $key;
+                //if not on the block list.
+                if (!isset($this->serverConfigBlock[$key])) {
+                    return $key;
+                }
+
+            } while (count($this->serverConfig) > count($this->serverConfigBlock));
+
+        } else {
+            //search the config and find out the key
+            foreach ($this->serverConfig as $k => $configitem) {
+                if ($configitem["ip"] == $ip && $configitem["port"] == $port) {
+                    return $k;
+                }
             }
 
-        } while (count($this->serverConfig) > count($this->serverConfigBlock));
+            //ok insert
+            $this->serverConfig[] = array("ip" => $ip, "port" => $port);
 
+            //found again T_T..
+            foreach ($this->serverConfig as $k => $configitem) {
+                if ($configitem["ip"] == $ip && $configitem["port"] == $port) {
+                    return $k;
+                }
+            }
+        }
         throw new \Exception("there is no one server can connect", 100010);
+
     }
 
     //get current client
-    private function getClientObj()
+    private function getClientObj($ip = "", $port = "")
     {
-        $key = $this->getConfigObjKey();
+        $key = $this->getConfigObjKey($ip, $port);
         $clientKey = $this->serverConfig[$key]["ip"] . "_" . $this->serverConfig[$key]["port"];
-
         //set the current client key
         $this->currentClientKey = $clientKey;
 
@@ -93,7 +94,7 @@ class Client
                 'open_tcp_nodelay' => 1,
             ));
 
-            if (!$client->connect($this->serverConfig[$key]["ip"], $this->serverConfig[$key]["port"], self::SW_RECIVE_TIMEOUT)) {
+            if (!$client->connect($this->serverConfig[$key]["ip"], $this->serverConfig[$key]["port"], DoraConst::SW_RECIVE_TIMEOUT)) {
                 //connect fail
                 $errorCode = $client->errCode;
                 if ($errorCode == 0) {
@@ -117,13 +118,13 @@ class Client
 
     /**
      * 单api请求
-     * @param  string $name  api地址
-     * @param  array  $param 参数
-     * @param  bool   $sync  阻塞等待结果
-     * @param  int    $retry 通讯错误时重试次数
+     * @param  string $name api地址
+     * @param  array $param 参数
+     * @param  bool $sync 阻塞等待结果
+     * @param  int $retry 通讯错误时重试次数
      * @return mixed  返回单个请求结果
      */
-    public function singleAPI($name, $param, $sync = true, $retry = 0)
+    public function singleAPI($name, $param, $sync = true, $retry = 0, $ip = "", $port = "")
     {
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
         $packet = array(
@@ -137,18 +138,18 @@ class Client
         );
 
         if ($sync) {
-            $packet["type"] = self::SW_SYNC_SINGLE;
+            $packet["type"] = DoraConst::SW_SYNC_SINGLE;
         } else {
-            $packet["type"] = self::SW_RSYNC_SINGLE;
+            $packet["type"] = DoraConst::SW_RSYNC_SINGLE;
         }
 
         $sendData = $this->packEncode($packet);
 
-        $result = $this->doRequest($sendData);
+        $result = $this->doRequest($sendData, $ip, $port);
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = $this->doRequest($sendData);
+            $result = $this->doRequest($sendData, $ip, $port);
             $retry--;
         }
 
@@ -166,11 +167,11 @@ class Client
      *  "api_2"=>array("name"=>"apiname2","param"=>array("id"=>2)),
      * )
      * @param  array $params 提交参数 请指定key好方便区分对应结果，注意考虑到硬件资源有限并发请求不要超过50个
-     * @param  bool  $sync   阻塞等待所有结果
-     * @param  int   $retry  通讯错误时重试次数
+     * @param  bool $sync 阻塞等待所有结果
+     * @param  int $retry 通讯错误时重试次数
      * @return mixed 返回指定key结果
      */
-    public function multiAPI($params, $sync = true, $retry = 0)
+    public function multiAPI($params, $sync = true, $retry = 0, $ip = "", $port = "")
     {
 
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
@@ -180,18 +181,18 @@ class Client
         );
 
         if ($sync) {
-            $packet["type"] = self::SW_SYNC_MULTI;
+            $packet["type"] = DoraConst::SW_SYNC_MULTI;
         } else {
-            $packet["type"] = self::SW_RSYNC_MULTI;
+            $packet["type"] = DoraConst::SW_RSYNC_MULTI;
         }
 
         $sendData = $this->packEncode($packet);
 
-        $result = $this->doRequest($sendData);
+        $result = $this->doRequest($sendData, $ip, $port);
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = $this->doRequest($sendData);
+            $result = $this->doRequest($sendData, $ip, $port);
             $retry--;
         }
 
@@ -202,11 +203,11 @@ class Client
         return $result;
     }
 
-    private function doRequest($sendData)
+    private function doRequest($sendData, $ip = "", $port = "")
     {
         //get client obj
         try {
-            $client = $this->getClientObj();
+            $client = $this->getClientObj($ip, $port);
         } catch (\Exception $e) {
             return $this->packFormat($e->getMessage(), $e->getCode());
         }
@@ -257,8 +258,8 @@ class Client
     private function packEncode($data)
     {
         $sendStr = serialize($data);
-        if (self::SW_DATASIGEN_FLAG == true) {
-            $signedcode = pack('N', crc32($sendStr . self::SW_DATASIGEN_SALT));
+        if (DoraConst::SW_DATASIGEN_FLAG == true) {
+            $signedcode = pack('N', crc32($sendStr . DoraConst::SW_DATASIGEN_SALT));
             $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
         } else {
             $sendStr = pack('N', strlen($sendStr)) . $sendStr;
@@ -271,13 +272,13 @@ class Client
     {
         $header = substr($str, 0, 4);
 
-        if (self::SW_DATASIGEN_FLAG == true) {
+        if (DoraConst::SW_DATASIGEN_FLAG == true) {
 
             $signedcode = substr($str, 4, 4);
             $result = substr($str, 8);
 
             //check signed
-            if (pack("N", crc32($result . self::SW_DATASIGEN_SALT)) != $signedcode) {
+            if (pack("N", crc32($result . DoraConst::SW_DATASIGEN_SALT)) != $signedcode) {
                 return $this->packFormat("Signed check error!", 100010);
             }
         } else {
