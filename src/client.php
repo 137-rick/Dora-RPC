@@ -41,7 +41,7 @@ class Client
         }
 
         //if not specified the ip and port random get one
-        if ($ip == "" && $port == "") {
+        if ($ip == "" || $port == "") {
             do {
                 //get one config by random
                 $key = array_rand($this->serverConfig);
