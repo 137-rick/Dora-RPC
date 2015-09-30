@@ -117,11 +117,44 @@ class Client
     }
 
     /**
+     * 获取应用服务器信息 get the backend service stat
+     * @param string $ip
+     * @param string $port
+     * @return array
+     */
+
+    public function getStat($ip = "", $port = "")
+    {
+        $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
+        $packet = array(
+            'guid' => $guid,
+            'api' => array(
+                "cmd" => array(
+                    'name' => "getStat",
+                    'param' => array(),
+                ),
+            ),
+            'type' => DoraConst::SW_CONTROL_CMD,
+        );
+
+        $sendData = $this->packEncode($packet);
+        $result = $this->doRequest($sendData, $ip, $port);
+
+        if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
+            return $this->packFormat("guid wront please retry..", 100100, $result);
+        }
+
+        return $result;
+    }
+
+    /**
      * 单api请求
      * @param  string $name api地址
      * @param  array $param 参数
      * @param  bool $sync 阻塞等待结果
      * @param  int $retry 通讯错误时重试次数
+     * @param  string $ip 要连得ip地址，如果不指定从现有配置随机个
+     * @param  string $port 要连得port地址，如果不指定从现有配置找一个
      * @return mixed  返回单个请求结果
      */
     public function singleAPI($name, $param, $sync = true, $retry = 0, $ip = "", $port = "")
@@ -169,6 +202,8 @@ class Client
      * @param  array $params 提交参数 请指定key好方便区分对应结果，注意考虑到硬件资源有限并发请求不要超过50个
      * @param  bool $sync 阻塞等待所有结果
      * @param  int $retry 通讯错误时重试次数
+     * @param  string $ip 要连得ip地址，如果不指定从现有配置随机个
+     * @param  string $port 要连得port地址，如果不指定从现有配置找一个
      * @return mixed 返回指定key结果
      */
     public function multiAPI($params, $sync = true, $retry = 0, $ip = "", $port = "")

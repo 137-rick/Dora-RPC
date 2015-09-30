@@ -106,6 +106,7 @@ abstract class Server
         #api not set
         if (!is_array($req["api"]) && count($req["api"])) {
             $pack = $this->packFormat("param api is empty", 100003);
+            $pack["guid"] = $req["guid"];
             $pack = $this->packEncode($pack);
             $serv->send($fd, $pack);
 
@@ -167,6 +168,23 @@ abstract class Server
                 unset($this->taskInfo[$fd]);
 
                 return true;
+                break;
+            case DoraConst::SW_CONTROL_CMD:
+                if ($this->taskInfo[$fd]["api"]["cmd"]["name"] == "getStat") {
+                    $pack = $this->packFormat("OK", 0, array("server" => $serv->stats()));
+                    $pack["guid"] = $task["guid"];
+                    $pack = $this->packEncode($pack);
+                    $serv->send($fd, $pack);
+                    unset($this->taskInfo[$fd]);
+                    return true;
+                }
+
+                //no one process
+                $pack = $this->packFormat("unknow cmd", 100011);
+                $pack = $this->packEncode($pack);
+
+                $serv->send($fd, $pack);
+                unset($this->taskInfo[$fd]);
                 break;
             default:
                 $pack = $this->packFormat("unknow task type.未知类型任务", 100002);

@@ -165,7 +165,7 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100008 the return guid wrong may be the socket trasfer wrong data
 > * 100009 the recive wrong or timeout
 > * 100010 there is no server can connect
-
+> * 100011 unknow cmd of controlle
 ----------
 
 ##性能(Performance)
