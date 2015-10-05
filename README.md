@@ -13,6 +13,8 @@ For complex projects separation, the project can be better maintained by the API
 > * If you find something wrong,please submit an issue
 
 ----------
+#设计思路(Design)
+http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 
 #功能支持(Function)
 > * 支持单API调用，多API并发调用
