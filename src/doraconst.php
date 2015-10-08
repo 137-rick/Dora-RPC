@@ -4,10 +4,10 @@ namespace DoraRPC;
 class DoraConst
 {
     const SW_SYNC_SINGLE = 'SSS';
-    const SW_RSYNC_SINGLE = 'SRS';
+    const SW_ASYNC_SINGLE = 'SRS';
 
     const SW_SYNC_MULTI = 'SSM';
-    const SW_RSYNC_MULTI = 'SRM';
+    const SW_ASYNC_MULTI = 'SRM';
 
     const SW_CONTROL_CMD = 'SC';
 

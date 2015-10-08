@@ -173,7 +173,7 @@ class Client
         if ($sync) {
             $packet["type"] = DoraConst::SW_SYNC_SINGLE;
         } else {
-            $packet["type"] = DoraConst::SW_RSYNC_SINGLE;
+            $packet["type"] = DoraConst::SW_ASYNC_SINGLE;
         }
 
         $sendData = $this->packEncode($packet);
@@ -218,7 +218,7 @@ class Client
         if ($sync) {
             $packet["type"] = DoraConst::SW_SYNC_MULTI;
         } else {
-            $packet["type"] = DoraConst::SW_RSYNC_MULTI;
+            $packet["type"] = DoraConst::SW_ASYNC_MULTI;
         }
 
         $sendData = $this->packEncode($packet);

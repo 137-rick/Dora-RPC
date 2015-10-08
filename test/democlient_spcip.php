@@ -13,7 +13,7 @@ for ($i = 0; $i < 100000; $i++) {
     $ret = $obj->singleAPI("abc", array(234, $i), true, 1,"192.168.33.10",9567);
     var_dump($ret);
 
-    //multi && rsync
+    //multi && async
     $data = array(
         "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
         "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),

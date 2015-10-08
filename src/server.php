@@ -131,7 +131,7 @@ abstract class Server
 
                 return true;
                 break;
-            case DoraConst::SW_RSYNC_SINGLE:
+            case DoraConst::SW_ASYNC_SINGLE:
                 $task["api"] = $this->taskInfo[$fd]["api"]["one"];
                 $serv->task($task);
 
@@ -155,7 +155,7 @@ abstract class Server
 
                 return true;
                 break;
-            case DoraConst::SW_RSYNC_MULTI:
+            case DoraConst::SW_ASYNC_MULTI:
                 foreach ($req["api"] as $k => $v) {
                     $task["api"] = $this->taskInfo[$fd]["api"][$k];
                     $serv->task($task);
