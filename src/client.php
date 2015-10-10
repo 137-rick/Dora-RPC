@@ -31,7 +31,7 @@ class Client
     }
 
     //random get config key
-    private function getConfigObjKey($ip = "", $port = "")
+    private function getConfigObjKey()
     {
 
         // if there is no config can use clean up the block list
@@ -41,36 +41,17 @@ class Client
         }
 
         //if not specified the ip and port random get one
-        if ($ip == "" || $port == "") {
-            do {
-                //get one config by random
-                $key = array_rand($this->serverConfig);
+        do {
+            //get one config by random
+            $key = array_rand($this->serverConfig);
 
-                //if not on the block list.
-                if (!isset($this->serverConfigBlock[$key])) {
-                    return $key;
-                }
-
-            } while (count($this->serverConfig) > count($this->serverConfigBlock));
-
-        } else {
-            //search the config and find out the key
-            foreach ($this->serverConfig as $k => $configitem) {
-                if ($configitem["ip"] == $ip && $configitem["port"] == $port) {
-                    return $k;
-                }
+            //if not on the block list.
+            if (!isset($this->serverConfigBlock[$key])) {
+                return $key;
             }
 
-            //ok insert
-            $this->serverConfig[] = array("ip" => $ip, "port" => $port);
+        } while (count($this->serverConfig) > count($this->serverConfigBlock));
 
-            //found again T_T..
-            foreach ($this->serverConfig as $k => $configitem) {
-                if ($configitem["ip"] == $ip && $configitem["port"] == $port) {
-                    return $k;
-                }
-            }
-        }
         throw new \Exception("there is no one server can connect", 100010);
 
     }
@@ -78,10 +59,25 @@ class Client
     //get current client
     private function getClientObj($ip = "", $port = "")
     {
-        $key = $this->getConfigObjKey($ip, $port);
-        $clientKey = $this->serverConfig[$key]["ip"] . "_" . $this->serverConfig[$key]["port"];
-        //set the current client key
-        $this->currentClientKey = $clientKey;
+        $connectHost = "";
+        $connectPort = "";
+
+        //if not spc will random
+        if ($ip == "" && $port == "") {
+            $key = $this->getConfigObjKey();
+            $clientKey = $this->serverConfig[$key]["ip"] . "_" . $this->serverConfig[$key]["port"];
+            //set the current client key
+            $this->currentClientKey = $clientKey;
+            $connectHost = $this->serverConfig[$key]["ip"];
+            $connectPort = $this->serverConfig[$key]["port"];
+        } else {
+            //using spec
+            $clientKey = trim($ip) . "_" . trim($port);
+            //set the current client key
+            $this->currentClientKey = $clientKey;
+            $connectHost = $ip;
+            $connectPort = $port;
+        }
 
         if (!isset(self::$client[$clientKey])) {
             $client = new \swoole_client(SWOOLE_SOCK_TCP | SWOOLE_KEEP);
@@ -94,7 +90,7 @@ class Client
                 'open_tcp_nodelay' => 1,
             ));
 
-            if (!$client->connect($this->serverConfig[$key]["ip"], $this->serverConfig[$key]["port"], DoraConst::SW_RECIVE_TIMEOUT)) {
+            if (!$client->connect($connectHost, $connectPort, DoraConst::SW_RECIVE_TIMEOUT)) {
                 //connect fail
                 $errorCode = $client->errCode;
                 if ($errorCode == 0) {
