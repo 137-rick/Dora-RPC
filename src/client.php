@@ -178,7 +178,7 @@ class Client
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = Packet::doRequest($sendData, $ip, $port);
+            $result = $this->doRequest($sendData, $ip, $port);
             $retry--;
         }
 
