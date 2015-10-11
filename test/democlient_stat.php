@@ -1,5 +1,6 @@
 <?php
 include "../src/doraconst.php";
+include "../src/packet.php";
 include "../src/client.php";
 
 $config = array(

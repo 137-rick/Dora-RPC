@@ -92,10 +92,10 @@ abstract class Server
 
     final public function onReceive(\swoole_server $serv, $fd, $from_id, $data)
     {
-        $reqa = $this->packDecode($data);
+        $reqa = Packet::packDecode($data);
         #decode error
         if ($reqa["code"] != 0) {
-            $req = $this->packEncode($reqa);
+            $req = Packet::packEncode($reqa);
             $serv->send($fd, $req);
 
             return true;
@@ -105,9 +105,9 @@ abstract class Server
 
         #api not set
         if (!is_array($req["api"]) && count($req["api"])) {
-            $pack = $this->packFormat("param api is empty", 100003);
+            $pack = Packet::packFormat("param api is empty", 100003);
             $pack["guid"] = $req["guid"];
-            $pack = $this->packEncode($pack);
+            $pack = Packet::packEncode($pack);
             $serv->send($fd, $pack);
 
             return true;
@@ -135,9 +135,9 @@ abstract class Server
                 $task["api"] = $this->taskInfo[$fd]["api"]["one"];
                 $serv->task($task);
 
-                $pack = $this->packFormat("transfer success.已经成功投递", 100001);
+                $pack = Packet::packFormat("transfer success.已经成功投递", 100001);
                 $pack["guid"] = $task["guid"];
-                $pack = $this->packEncode($pack);
+                $pack = Packet::packEncode($pack);
                 $serv->send($fd, $pack);
 
                 unset($this->taskInfo[$fd]);
@@ -160,9 +160,9 @@ abstract class Server
                     $task["api"] = $this->taskInfo[$fd]["api"][$k];
                     $serv->task($task);
                 }
-                $pack = $this->packFormat("transfer success.已经成功投递", 100001);
+                $pack = Packet::packFormat("transfer success.已经成功投递", 100001);
                 $pack["guid"] = $task["guid"];
-                $pack = $this->packEncode($pack);
+                $pack = Packet::packEncode($pack);
 
                 $serv->send($fd, $pack);
                 unset($this->taskInfo[$fd]);
@@ -171,24 +171,24 @@ abstract class Server
                 break;
             case DoraConst::SW_CONTROL_CMD:
                 if ($this->taskInfo[$fd]["api"]["cmd"]["name"] == "getStat") {
-                    $pack = $this->packFormat("OK", 0, array("server" => $serv->stats()));
+                    $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
                     $pack["guid"] = $task["guid"];
-                    $pack = $this->packEncode($pack);
+                    $pack = Packet::packEncode($pack);
                     $serv->send($fd, $pack);
                     unset($this->taskInfo[$fd]);
                     return true;
                 }
 
                 //no one process
-                $pack = $this->packFormat("unknow cmd", 100011);
-                $pack = $this->packEncode($pack);
+                $pack = Packet::packFormat("unknow cmd", 100011);
+                $pack = Packet::packEncode($pack);
 
                 $serv->send($fd, $pack);
                 unset($this->taskInfo[$fd]);
                 break;
             default:
-                $pack = $this->packFormat("unknow task type.未知类型任务", 100002);
-                $pack = $this->packEncode($pack);
+                $pack = Packet::packFormat("unknow task type.未知类型任务", 100002);
+                $pack = Packet::packEncode($pack);
 
                 $serv->send($fd, $pack);
                 unset($this->taskInfo[$fd]);
@@ -201,12 +201,11 @@ abstract class Server
 
     final public function onTask($serv, $task_id, $from_id, $data)
     {
-        //$data["result"] = array("yes" => "ok");
         swoole_set_process_name("phptask|{$task_id}|" . $data["api"]["name"] . "");
         try {
             $data["result"] = $this->doWork($data);
         } catch (\Exception $e) {
-            $data["result"] = $this->packFormat($e->getMessage(), $e->getCode());
+            $data["result"] = Packet::packFormat($e->getMessage(), $e->getCode());
 
             return $data;
         }
@@ -262,12 +261,12 @@ abstract class Server
         switch ($data["type"]) {
 
             case DoraConst::SW_SYNC_SINGLE:
-                $packet = $this->packFormat("OK", 0, $data["result"]);
-                $packet["guid"] = $this->taskInfo[$fd]["guid"];
-                $packet = $this->packEncode($packet);
+                $Packet = Packet::packFormat("OK", 0, $data["result"]);
+                $Packet["guid"] = $this->taskInfo[$fd]["guid"];
+                $Packet = Packet::packEncode($Packet);
 
                 //sys_get_temp_dir
-                $serv->send($fd, $packet);
+                $serv->send($fd, $Packet);
                 unset($this->taskInfo[$fd]);
 
                 return true;
@@ -275,10 +274,10 @@ abstract class Server
 
             case DoraConst::SW_SYNC_MULTI:
                 if (count($this->taskInfo[$fd]["task"]) == 0) {
-                    $packet = $this->packFormat("OK", 0, $this->taskInfo[$fd]["result"]);
-                    $packet["guid"] = $this->taskInfo[$fd]["guid"];
-                    $packet = $this->packEncode($packet);
-                    $serv->send($fd, $packet);
+                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd]["result"]);
+                    $Packet["guid"] = $this->taskInfo[$fd]["guid"];
+                    $Packet = Packet::packEncode($Packet);
+                    $serv->send($fd, $Packet);
                     unset($this->taskInfo[$fd]);
 
                     return true;
@@ -300,65 +299,7 @@ abstract class Server
     {
         unset($this->taskInfo[$fd]);
     }
-
-
-    private function packEncode($data)
-    {
-        $sendStr = serialize($data);
-
-        if (DoraConst::SW_DATASIGEN_FLAG == true) {
-            $signedcode = pack('N', crc32($sendStr . DoraConst::SW_DATASIGEN_SALT));
-            $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
-        } else {
-            $sendStr = pack('N', strlen($sendStr)) . $sendStr;
-        }
-
-        return $sendStr;
-    }
-
-    private function packDecode($str)
-    {
-        $header = substr($str, 0, 4);
-        $len = unpack("Nlen", $header);
-        $len = $len["len"];
-
-        if (DoraConst::SW_DATASIGEN_FLAG == true) {
-
-            $signedcode = substr($str, 4, 4);
-            $result = substr($str, 8);
-
-            //check signed
-            if (pack("N", crc32($result . DoraConst::SW_DATASIGEN_SALT)) != $signedcode) {
-                return $this->packFormat("Signed check error!", 100010);
-            }
-
-            $len = $len - 4;
-
-        } else {
-            $result = substr($str, 4);
-        }
-
-        if ($len != strlen($result)) {
-            //结果长度不对
-            echo "error length...\n";
-
-            return $this->packFormat("packet length invalid 包长度非法", 100007);
-        }
-        $result = unserialize($result);
-
-        return $this->packFormat("OK", 0, $result);
-    }
-
-    private function packFormat($msg = "OK", $code = 0, $data = array())
-    {
-        $pack = array(
-            "code" => $code,
-            "msg" => $msg,
-            "data" => $data,
-        );
-
-        return $pack;
-    }
+    
 
     final public function __destruct()
     {

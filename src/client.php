@@ -122,7 +122,7 @@ class Client
     public function getStat($ip = "", $port = "")
     {
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
-        $packet = array(
+        $Packet = array(
             'guid' => $guid,
             'api' => array(
                 "cmd" => array(
@@ -133,11 +133,11 @@ class Client
             'type' => DoraConst::SW_CONTROL_CMD,
         );
 
-        $sendData = $this->packEncode($packet);
+        $sendData = Packet::packEncode($Packet);
         $result = $this->doRequest($sendData, $ip, $port);
 
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
-            return $this->packFormat("guid wront please retry..", 100100, $result);
+            return Packet::packFormat("guid wront please retry..", 100100, $result);
         }
 
         return $result;
@@ -156,7 +156,7 @@ class Client
     public function singleAPI($name, $param, $sync = true, $retry = 0, $ip = "", $port = "")
     {
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
-        $packet = array(
+        $Packet = array(
             'guid' => $guid,
             'api' => array(
                 "one" => array(
@@ -167,23 +167,23 @@ class Client
         );
 
         if ($sync) {
-            $packet["type"] = DoraConst::SW_SYNC_SINGLE;
+            $Packet["type"] = DoraConst::SW_SYNC_SINGLE;
         } else {
-            $packet["type"] = DoraConst::SW_ASYNC_SINGLE;
+            $Packet["type"] = DoraConst::SW_ASYNC_SINGLE;
         }
 
-        $sendData = $this->packEncode($packet);
+        $sendData = Packet::packEncode($Packet);
 
         $result = $this->doRequest($sendData, $ip, $port);
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = $this->doRequest($sendData, $ip, $port);
+            $result = Packet::doRequest($sendData, $ip, $port);
             $retry--;
         }
 
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
-            return $this->packFormat("guid wront please retry..", 100100, $result);
+            return Packet::packFormat("guid wront please retry..", 100100, $result);
         }
 
         return $result;
@@ -206,18 +206,18 @@ class Client
     {
 
         $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
-        $packet = array(
+        $Packet = array(
             'guid' => $guid,
             'api' => $params,
         );
 
         if ($sync) {
-            $packet["type"] = DoraConst::SW_SYNC_MULTI;
+            $Packet["type"] = DoraConst::SW_SYNC_MULTI;
         } else {
-            $packet["type"] = DoraConst::SW_ASYNC_MULTI;
+            $Packet["type"] = DoraConst::SW_ASYNC_MULTI;
         }
 
-        $sendData = $this->packEncode($packet);
+        $sendData = Packet::packEncode($Packet);
 
         $result = $this->doRequest($sendData, $ip, $port);
 
@@ -228,7 +228,7 @@ class Client
         }
 
         if ($result["code"] == "0" && $guid != $result["data"]["guid"]) {
-            return $this->packFormat("guid wrong please retry..", 100008, $result);
+            return Packet::packFormat("guid wrong please retry..", 100008, $result);
         }
 
         return $result;
@@ -240,7 +240,7 @@ class Client
         try {
             $client = $this->getClientObj($ip, $port);
         } catch (\Exception $e) {
-            return $this->packFormat($e->getMessage(), $e->getCode());
+            return Packet::packFormat($e->getMessage(), $e->getCode());
         }
 
         $ret = $client->send($sendData);
@@ -255,72 +255,26 @@ class Client
             if ($errorcode == 0) {
                 $msg = "connect fail.check host dns.";
                 $errorcode = -1;
-                $packet = $this->packFormat($msg, $errorcode);
+                $Packet = Packet::packFormat($msg, $errorcode);
             } else {
                 $msg = socket_strerror($errorcode);
-                $packet = $this->packFormat($msg, $errorcode);
+                $Packet = Packet::packFormat($msg, $errorcode);
             }
 
-            return $packet;
+            return $Packet;
         }
 
         //recive the response
         $result = $client->recv();
         //recive error check
         if ($result !== false) {
-            return $this->packDecode($result);
+            return Packet::packDecode($result);
         } else {
-            return $this->packFormat("the recive wrong or timeout", 100009);
+            return Packet::packFormat("the recive wrong or timeout", 100009);
         }
 
     }
 
-    private function packFormat($msg = "OK", $code = 0, $data = array())
-    {
-        $pack = array(
-            "code" => $code,
-            "msg" => $msg,
-            "data" => $data,
-        );
-
-        return $pack;
-    }
-
-    private function packEncode($data)
-    {
-        $sendStr = serialize($data);
-        if (DoraConst::SW_DATASIGEN_FLAG == true) {
-            $signedcode = pack('N', crc32($sendStr . DoraConst::SW_DATASIGEN_SALT));
-            $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
-        } else {
-            $sendStr = pack('N', strlen($sendStr)) . $sendStr;
-        }
-
-        return $sendStr;
-    }
-
-    private function packDecode($str)
-    {
-        $header = substr($str, 0, 4);
-
-        if (DoraConst::SW_DATASIGEN_FLAG == true) {
-
-            $signedcode = substr($str, 4, 4);
-            $result = substr($str, 8);
-
-            //check signed
-            if (pack("N", crc32($result . DoraConst::SW_DATASIGEN_SALT)) != $signedcode) {
-                return $this->packFormat("Signed check error!", 100010);
-            }
-        } else {
-            $result = substr($str, 4);
-        }
-
-        $len = unpack("Nlen", $header);
-        $result = unserialize($result);
-
-        return $this->packFormat("OK", 0, $result);
-    }
 
     public function __destruct()
     {

@@ -1,5 +1,6 @@
 <?php
 include "../src/doraconst.php";
+include "../src/packet.php";
 include "../src/client.php";
 
 $config = array(
@@ -8,16 +9,28 @@ $config = array(
 );
 
 $obj = new \DoraRPC\Client($config);
-for ($i = 0; $i < 100000; $i++) {
+//for ($i = 0; $i < 100000; $i++) {
     //single && sync
     $ret = $obj->singleAPI("abc", array(234, $i), true, 1);
     var_dump($ret);
 
-    //multi && async
+    //single call && async
+    $ret = $obj->singleAPI("abc", array(234, $i), false, 1);
+    var_dump($ret);
+
+    //multi && sync
     $data = array(
         "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
         "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
     );
+    $ret = $obj->multiAPI($data, false, 1);
+    var_dump($ret);
+
+    //multi && async
+    $data = array(
+        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "32111321")),
+        "cd" => array("name" => "oakdfff", "param" => array("codo" => "f11ds")),
+    );
     $ret = $obj->multiAPI($data, true, 1);
     var_dump($ret);
-}
+//}
