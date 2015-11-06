@@ -198,3 +198,6 @@ and swoole offcial document
 ----------
 ###License授权
 Apache
+
+###QQ Group
+QQ Group:346840633
