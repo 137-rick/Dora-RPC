@@ -12,13 +12,20 @@ abstract class Server
     private $server = null;
     private $taskInfo = array();
 
+    private $reportConfig = array();
+
+    private $serverIP;
+    private $serverPort;
+
+    private $groupConfig;
+
     //for extends class overwrite default config
     //用于继承类覆盖默认配置
     protected $externalConfig = array();
 
     abstract public function initServer($server);
 
-    final public function __construct($ip = "0.0.0.0", $port = 9567)
+    final public function __construct($ip = "0.0.0.0", $port = 9567, $groupConfig = array(), $reportConfig = array())
     {
         $this->server = new \swoole_server($ip, $port);
         $config = array(
@@ -66,7 +73,63 @@ abstract class Server
         //invoke the start
         $this->initServer($this->server);
 
+        //store current ip port
+        $this->serverIP = $ip;
+        $this->serverPort = $port;
+
+        //store current server group
+        $this->groupConfig = $groupConfig;
+        //if user set the report config will start report
+        if (count($reportConfig) > 0) {
+            echo "Found Report Config... Start Report Process" . PHP_EOL;
+            $this->reportConfig = $reportConfig;
+            //use this report the state
+            $process = new \swoole_process(array($this, "monitorReport"));
+            $this->server->addProcess($process);
+        }
+
         $this->server->start();
+    }
+
+    //////////////////////////////server monitor start/////////////////////////////
+    //server report
+    final public function monitorReport(\swoole_process $process)
+    {
+        static $_redisObj;
+
+        while (true) {
+            echo "Report Node for Discovery" . PHP_EOL;
+            //register group and server
+            $redisconfig = $this->reportConfig;
+            //register this node server info to redis
+            foreach ($redisconfig as $redisitem) {
+
+                //validate redis ip and port
+                if (trim($redisitem["ip"]) && $redisitem["port"] > 0) {
+                    $key = $redisitem["ip"] . "_" . $redisitem["port"];
+                    try {
+                        if (!isset($_redisObj[$key])) {
+                            //if not connect
+                            $_redisObj[$key] = new \Redis();
+                            $_redisObj[$key]->connect($redisitem["ip"], $redisitem["port"]);
+                        }
+                        //register this server
+                        $_redisObj[$key]->sadd("dora.serverlist", json_encode(array("node" => array("ip" => $this->serverIP, "port" => $this->serverPort), "group" => $this->groupConfig["list"])));
+                        //set time out
+                        $_redisObj[$key]->set("dora.servertime." . $this->serverIP . "." . $this->serverPort . ".time", time());
+
+                        echo "Report to Server:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
+
+                    } catch (\Exception $ex) {
+                        $_redisObj[$key] = null;
+                        echo "report to server error:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
+                    }
+                }
+            }
+
+            sleep(10);
+            //sleep 10 sec and report again
+        }
     }
 
     final public function onConnect($serv, $fd)
@@ -299,7 +362,7 @@ abstract class Server
     {
         unset($this->taskInfo[$fd]);
     }
-    
+
 
     final public function __destruct()
     {
