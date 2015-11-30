@@ -57,13 +57,14 @@ $groupConfig = array(
     ),
 );
 
-//which redis for service discovery
+//redis for service discovery register
+//when you on product env please prepare more redis to registe service for high available
 $redisconfig = array(
-    array(
+    array(//first reporter
         "ip" => "127.0.0.1",
         "port" => "6379",
     ),
-    array(
+    array(//next reporter
         "ip" => "127.0.0.1",
         "port" => "6379",
     ),
