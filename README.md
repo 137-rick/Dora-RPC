@@ -5,12 +5,14 @@
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
 > * 目前只提供PHP语言代码
 > * 后续有什么bug或者问题请提交Issue
+> * 基础redis制作的服务发现
 
 ----------
 For complex projects separation, the project can be better maintained by the API project management.
 > * Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC
 > * Now support an simple PHP version
 > * If you find something wrong,please submit an issue
+> * base on Redis. Service discovery for High available
 
 ----------
 #设计思路(Design)
@@ -30,6 +32,7 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 > * Please visit Swoole official for further infomation
 > * keep the connection of client after the request finishe
 > * check the guid when the send<->recive
+> * service discovery.
 
 ----------
 
