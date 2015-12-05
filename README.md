@@ -85,7 +85,7 @@ composer update
 
 ###客户端(Client)
 ```
-include "dora-rpc/client.php";
+include "src/client.php";
 
 //app server config 
 $config = array(
@@ -113,7 +113,7 @@ for ($i = 0; $i < 100000; $i++) {
 
 ###服务端(Server)
 ```
-include "dora-rpc/server.php";
+include "src/server.php";
 
 class Server extends DoraRPCServer {
 
@@ -152,6 +152,31 @@ class Server extends DoraRPCServer {
 $res = new Server();
 ```
 
+----------
+###客户端监控器(Client Local Monitor)
+```
+include "src/doraconst.php";
+include "src/packet.php";
+include "src/monitor.php";
+
+
+//redis for service discovery register
+//when you on product env please prepare more redis to registe service for high available
+$redisconfig = array(
+    array(//first reporter
+        "ip" => "127.0.0.1",
+        "port" => "6379",
+    ),
+    array(//next reporter
+        "ip" => "127.0.0.1",
+        "port" => "6379",
+    ),
+);
+
+//ok start server
+$res = new \DoraRPC\Monitor("0.0.0.0", 9569, $redisconfig, "./client.conf.php");
+//this server will auto get the node server list from redis and general the client config on special path
+```
 ----------
 
 ###以上代码测试方法
