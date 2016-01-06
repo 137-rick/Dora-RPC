@@ -71,15 +71,23 @@ composer update
 > * 目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 > * 做这个只是为了减少大家启用RPC的开发时间
 > * 返回结果是一个数组 分两部分，第一层是通讯状态（code），第二层是处理状态（code）
-
+> * 开启服务发现功能，服务端在启动的时候，如果指定redis配置则会自动将当前服务器信息注册到Redis上
 ----------
 
 > * a simple server
 > * you must extends the swserver and implement dowork function
 > * it's use for decrease the dev cycle
 > * the result will be a two-level arrayfirst is communicate state(code field),second is dowork state
-
+> * when you setup the redis config the server will register this server to the redis for service discovery
 ----------
+
+###dora-rpc/monitor.php
+> * 服务发现客户端，通过扫描Redis获取到所有可用后端服务列表，并生成配置到指定路径
+> * an discovery controller client that:scan all the redis and get the list of available service and general config file to special path
+
+###dora-rpc/groupclient.php
+> * 服务发现monitor进程产生的配置可以用这个客户端直接引用，请求时可以指定使用哪个组的服务
+> * an client for service discovery （monitor general the config from redis） that you can use the config directly 
 
 ##使用方法(Example)
 
@@ -177,6 +185,49 @@ $redisconfig = array(
 $res = new \DoraRPC\Monitor("0.0.0.0", 9569, $redisconfig, "./client.conf.php");
 //this server will auto get the node server list from redis and general the client config on special path
 ```
+----------
+###客户端监控器(Client Local Monitor)
+```
+<?php
+include "../src/doraconst.php";
+include "../src/packet.php";
+include "../src/groupclient.php";
+
+$config = "client.conf.php";
+
+$obj = new \DoraRPC\GroupClient($config);
+
+$ret = $obj->singleAPI("abc", array(123, 123), "group1", true, 1);
+var_dump($ret);
+
+for ($i = 0; $i < 1000; $i++) {
+    //single && sync
+    $ret = $obj->singleAPI("abc", array(234, $i), "group1", true, 1);
+    var_dump($ret);
+
+    //single call && async
+    $ret = $obj->singleAPI("abc", array(234, $i), "group1", false, 1);
+    var_dump($ret);
+
+    //multi && sync
+    $data = array(
+        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
+        "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
+    );
+    $ret = $obj->multiAPI($data, "group1", false, 1);
+    var_dump($ret);
+
+    //multi && async
+    $data = array(
+        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "32111321")),
+        "cd" => array("name" => "oakdfff", "param" => array("codo" => "f11ds")),
+    );
+    $ret = $obj->multiAPI($data, "group1", true, 1);
+    var_dump($ret);
+}
+
+```
+
 ----------
 
 ###以上代码测试方法

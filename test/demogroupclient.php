@@ -1,21 +1,22 @@
 <?php
 include "../src/doraconst.php";
 include "../src/packet.php";
-include "../src/client.php";
+include "../src/groupclient.php";
 
-$config = array(
-    array("ip" => "127.0.0.1", "port" => 9567),
-    //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
-);
+$config = "client.conf.php";
 
-$obj = new \DoraRPC\Client($config);
+$obj = new \DoraRPC\GroupClient($config);
+
+$ret = $obj->singleAPI("abc", array(123, 123), "group1", true, 1);
+var_dump($ret);
+
 for ($i = 0; $i < 1000; $i++) {
     //single && sync
-    $ret = $obj->singleAPI("abc", array(234, $i), true, 1);
+    $ret = $obj->singleAPI("abc", array(234, $i), "group1", true, 1);
     var_dump($ret);
 
     //single call && async
-    $ret = $obj->singleAPI("abc", array(234, $i), false, 1);
+    $ret = $obj->singleAPI("abc", array(234, $i), "group1", false, 1);
     var_dump($ret);
 
     //multi && sync
@@ -23,7 +24,7 @@ for ($i = 0; $i < 1000; $i++) {
         "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
         "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
     );
-    $ret = $obj->multiAPI($data, false, 1);
+    $ret = $obj->multiAPI($data, "group1", false, 1);
     var_dump($ret);
 
     //multi && async
@@ -31,6 +32,6 @@ for ($i = 0; $i < 1000; $i++) {
         "oak" => array("name" => "oakdf", "param" => array("dsaf" => "32111321")),
         "cd" => array("name" => "oakdfff", "param" => array("codo" => "f11ds")),
     );
-    $ret = $obj->multiAPI($data, true, 1);
+    $ret = $obj->multiAPI($data, "group1", true, 1);
     var_dump($ret);
 }
