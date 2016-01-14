@@ -63,8 +63,8 @@ composer update
 
 ##文件功能简介(File)
 ###dora-rpc/client.php
-> * 使用最简单的方式实现的客户端
-> * an simple client
+> * 使用最简单的方式实现的客户端，通过这个框架可以轻松实现PHP的伪多线程，通过分布式加快接口响应速度及高可用
+> * an simple client,it's easy adn simply to implement the multi fake thread,you can speed up you API by this distribute RPC
 
 ###dora-rpc/server.php
 > * 使用最简单的方式实现的服务端
