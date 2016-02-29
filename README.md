@@ -186,7 +186,7 @@ $res = new \DoraRPC\Monitor("0.0.0.0", 9569, $redisconfig, "./client.conf.php");
 //this server will auto get the node server list from redis and general the client config on special path
 ```
 ----------
-###客户端监控器(Client Local Monitor)
+###使用客户端监控器配置的客户端(Client using Local Monitor Config)
 ```
 <?php
 include "../src/doraconst.php";
