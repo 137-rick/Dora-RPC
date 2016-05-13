@@ -143,10 +143,10 @@ abstract class Server
         if (!$istask) {
             //worker
             swoole_set_process_name("phpworker|{$worker_id}");
-            $this->initTask($server, $worker_id);
         } else {
             //task
             swoole_set_process_name("phptask|{$worker_id}");
+            $this->initTask($server, $worker_id);
         }
 
     }
