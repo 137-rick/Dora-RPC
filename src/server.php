@@ -310,7 +310,7 @@ abstract class Server
 
         $fd = $data["fd"];
 
-        if (!isset($this->taskInfo[$fd]) || !$data["result"]) {
+        if (!isset($this->taskInfo[$fd]) ) {
             unset($this->taskInfo[$fd]);
 
             return true;
