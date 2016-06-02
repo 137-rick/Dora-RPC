@@ -269,8 +269,7 @@ abstract class Server
             $data["result"] = $this->doWork($data);
         } catch (\Exception $e) {
             $data["result"] = Packet::packFormat($e->getMessage(), $e->getCode());
-
-            return $data;
+            return serialize($data);
         }
 
         //fixed the result more than 8k timeout bug
