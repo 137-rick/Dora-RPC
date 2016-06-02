@@ -119,7 +119,7 @@ class GroupClient
                 }
 
                 //put the fail connect config to block list
-                $this->serverConfigBlock[$key] = 1;
+                $this->serverConfigBlock[$group][$key] = 1;
                 throw new \Exception($msg, $errorCode);
             }
 
