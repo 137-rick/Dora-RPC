@@ -113,10 +113,12 @@ abstract class Server
                             $_redisObj[$key] = new \Redis();
                             $_redisObj[$key]->connect($redisitem["ip"], $redisitem["port"]);
                         }
+                        // 上报的服务器IP
+                        $reportServerIP = $this->getReportServerIP();
                         //register this server
-                        $_redisObj[$key]->sadd("dora.serverlist", json_encode(array("node" => array("ip" => $this->serverIP, "port" => $this->serverPort), "group" => $this->groupConfig["list"])));
+                        $_redisObj[$key]->sadd("dora.serverlist", json_encode(array("node" => array("ip" => $reportServerIP, "port" => $this->serverPort), "group" => $this->groupConfig["list"])));
                         //set time out
-                        $_redisObj[$key]->set("dora.servertime." . $this->serverIP . "." . $this->serverPort . ".time", time());
+                        $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $this->serverPort . ".time", time());
 
                         echo "Report to Server:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
 
@@ -294,6 +296,30 @@ abstract class Server
     {
         $result = date("Y-m-d H:i:s") . "|$type|" . json_encode($content) . "\r\n";
         file_put_contents("/tmp/" . $file, $result, FILE_APPEND);
+    }
+
+    /**
+     * 获取上报的服务器IP
+     * @return string
+     */
+    protected function getReportServerIP() {
+        if($this->serverIP == '0.0.0.0' || $this->serverIP == '127.0.0.1') {
+            $serverIps = swoole_get_local_ip();
+            $patternArray = array(
+                '10\.',
+                '172\.1[6-9]\.',
+                '172\.2[0-9]\.',
+                '172\.31\.',
+                '192\.168\.'
+            );
+            foreach($serverIps as $serverIp) {
+                // 匹配内网IP
+                if(preg_match('#^'.implode('|', $patternArray).'#', $serverIp)) {
+                    return $serverIp;
+                }
+            }
+        }
+        return $this->serverIP;
     }
 
     final public function onFinish($serv, $task_id, $data)
