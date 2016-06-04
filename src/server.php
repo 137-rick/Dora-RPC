@@ -270,7 +270,7 @@ abstract class Server
         try {
             $data["result"] = $this->doWork($data);
         } catch (\Exception $e) {
-            $data["result"] = array("msg"=>$e->getMessage(), "code"=>$e->getCode());
+            $data["result"] = Packet::packFormat($e->getMessage(), $e->getCode());
         }
 
         //fixed the result more than 8k timeout bug
