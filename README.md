@@ -9,7 +9,7 @@
 ----------
 For complex projects separation, the project can be better maintained by the API project management.
 > * Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC
-> * Now support an simple PHP version
+> * Now support an simple PHP version 
 > * If you find something wrong,please submit an issue
 
 ----------
@@ -70,15 +70,17 @@ composer update
 > * 使用最简单的方式实现的服务端
 > * 目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 > * 做这个只是为了减少大家启用RPC的开发时间
-> * 返回结果是一个数组 分两部分，第一层是通讯状态（code），第二层是处理状态（code）
 > * 开启服务发现功能，服务端在启动的时候，如果指定redis配置则会自动将当前服务器信息注册到Redis上
+> * 返回结果是一个数组 分两部分，第一层是通讯状态code，第二层是处理状态 code
+
 ----------
 
 > * a simple server
 > * you must extends the swserver and implement dowork function
 > * it's use for decrease the dev cycle
-> * the result will be a two-level arrayfirst is communicate state(code field),second is dowork state
 > * when you setup the redis config the server will register this server to the redis for service discovery
+> * the result will be a two-level arrayfirst is communicate state 'code field' ,second is dowork state
+
 ----------
 
 ###dora-rpc/monitor.php
