@@ -21,7 +21,7 @@ class DoraConst
 
     //a flag to decide if compress the packet
     //是否打开数据压缩，目前我们用的数据压缩是zlib的gzencode，压缩级别4
-    const SW_DATACOMPRESS_FLAG = true;
+    const SW_DATACOMPRESS_FLAG = false;
 
     //salt to mixed the crc result
     //上面开关开启后，用于加密串混淆结果，请保持客户端和服务端一致

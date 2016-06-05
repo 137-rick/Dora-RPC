@@ -119,7 +119,7 @@ class GroupClient
                 }
 
                 //put the fail connect config to block list
-                $this->serverConfigBlock[$group][$key] = 1;
+                $this->serverConfigBlock[$group][$clientKey] = 1;
                 throw new \Exception($msg, $errorCode);
             }
 
@@ -139,7 +139,7 @@ class GroupClient
 
     public function getStat($ip = "", $port = "")
     {
-        $guid = md5( microtime(true) . ,mt_rand(1, 1000000) . mt_rand(1, 1000000));
+        $guid = md5( microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
         $Packet = array(
             'guid' => $guid,
             'api' => array(
@@ -174,7 +174,7 @@ class GroupClient
      */
     public function singleAPI($name, $param, $group = "group1", $sync = true, $retry = 0, $ip = "", $port = "")
     {
-        $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
+        $guid = md5(microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
         $Packet = array(
             'guid' => $guid,
             'api' => array(
@@ -225,7 +225,7 @@ class GroupClient
     public function multiAPI($params, $group = "group1", $sync = true, $retry = 0, $ip = "", $port = "")
     {
 
-        $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
+        $guid = md5(microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
         $Packet = array(
             'guid' => $guid,
             'api' => $params,
