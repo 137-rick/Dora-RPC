@@ -22,7 +22,7 @@ class Packet
 
         //if compress the packet
         if (DoraConst::SW_DATACOMPRESS_FLAG == true) {
-            $sendStr = gzencode($sendStr, 2);
+            $sendStr = gzencode($sendStr, 4);
         }
 
         if (DoraConst::SW_DATASIGEN_FLAG == true) {
