@@ -139,7 +139,7 @@ class GroupClient
 
     public function getStat($ip = "", $port = "")
     {
-        $guid = md5( microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
+        $guid = $this->generateGuid();
         $Packet = array(
             'guid' => $guid,
             'api' => array(
@@ -174,7 +174,8 @@ class GroupClient
      */
     public function singleAPI($name, $param, $group = "group1", $sync = true, $retry = 0, $ip = "", $port = "")
     {
-        $guid = md5(microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
+        $guid = $this->generateGuid();
+
         $Packet = array(
             'guid' => $guid,
             'api' => array(
@@ -224,8 +225,8 @@ class GroupClient
      */
     public function multiAPI($params, $group = "group1", $sync = true, $retry = 0, $ip = "", $port = "")
     {
+        $guid = $this->generateGuid();
 
-        $guid = md5(microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
         $Packet = array(
             'guid' => $guid,
             'api' => $params,
@@ -293,6 +294,11 @@ class GroupClient
             return Packet::packFormat("the recive wrong or timeout", 100009);
         }
 
+    }
+
+    private function generateGuid()
+    {
+        return md5(microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
     }
 
 
