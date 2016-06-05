@@ -40,6 +40,7 @@ abstract class Server
             'open_tcp_nodelay' => 1,
             'heartbeat_check_interval' => 5,
             'heartbeat_idle_time' => 10,
+            'open_cpu_affinity' => 1,
 
             'reactor_num' => 32,
             'worker_num' => 40,
