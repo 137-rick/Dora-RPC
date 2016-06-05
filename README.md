@@ -39,6 +39,7 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 ##请安装依赖(depend)
 > * Swoole 1.8.x+
 > * PHP 5.4+
+> * zlib for compress packet
 
 ##Installation
 ```
