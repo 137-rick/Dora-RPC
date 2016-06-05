@@ -290,13 +290,8 @@ abstract class Server
 
     final public function onWorkerError(\swoole_server $serv, $worker_id, $worker_pid, $exit_code)
     {
-        $this->log("WorkerError", array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
-    }
-
-    private function log($type, $content, $file = "sw_error.log")
-    {
-        $result = date("Y-m-d H:i:s") . "|$type|" . json_encode($content) . "\r\n";
-        file_put_contents("/tmp/" . $file, $result, FILE_APPEND);
+        //using the swoole error log output the error
+        var_dump("workererror", array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
     }
 
     /**
