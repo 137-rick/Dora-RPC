@@ -260,8 +260,7 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 
 ----------
 ###测试结果Result
-> * 1 Thread QPS 4500
-> * Network Cost:0.002~0.004/sec
+> * Network Cost:0.002~0.004/sec Per Request
 > * CPU 10~25%
 以上还有很大优化空间
 There is still a lot of optimization space
