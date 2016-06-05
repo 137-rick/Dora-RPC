@@ -37,7 +37,7 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 ----------
 
 ##请安装依赖(depend)
-> * Swoole 1.7.17+
+> * Swoole 1.8.x+
 > * PHP 5.4+
 
 ##Installation
