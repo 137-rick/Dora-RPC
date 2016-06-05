@@ -1,4 +1,6 @@
 ##更新历史(ChangeLog)
+> * 2016-06-06 open cpu affinity,worker错误输出到swoole日志内
+> * 2016-06-01 @ppanphper 服务端业务代码exception导致等待问题,groupclient 下标错误问题修复，服务上报增加本地ip识别（试用）
 > * 2016-01-06 客户端增加分组配置客户端，可以用客户端调用多组隔离开的业务。另外之前加了服务发现在test/demomonitor
 > * 2015-09-30 客户端增加ip和port选项，常量放到一个文件内统一管理
 > * 2015-09-29 added to composer.
@@ -9,6 +11,8 @@
 > * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
 
 ----------
+> * 2016-06-06 open cpu affinity,worker error output to swoole log
+> * 2016-06-01 @ppanphper server user code exception wait forever bug,groupclient bug,service discovery
 > * 2016-01-06 client have new group config client that for test/demomonitor .(and service discovery demomonitor)
 > * 2015-09-30 client can set ip and port you want
 > * 2015-09-29 added to composer.
