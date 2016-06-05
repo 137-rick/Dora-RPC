@@ -63,12 +63,12 @@ abstract class Server
 
         $this->server->set($config);
 
-        $this->server->on('connect', array($this, 'onConnect'));
+        //$this->server->on('connect', array($this, 'onConnect'));
         $this->server->on('workerstart', array($this, 'onWorkerStart'));
         $this->server->on('receive', array($this, 'onReceive'));
         $this->server->on('workererror', array($this, 'onWorkerError'));
         $this->server->on('task', array($this, 'onTask'));
-        $this->server->on('close', array($this, 'onClose'));
+        //$this->server->on('close', array($this, 'onClose'));
         $this->server->on('finish', array($this, 'onFinish'));
 
         //invoke the start
@@ -137,7 +137,7 @@ abstract class Server
 
     final public function onConnect($serv, $fd)
     {
-        $this->taskInfo[$fd] = array();
+        //$this->taskInfo[$fd] = array();
     }
 
     final public function onWorkerStart($server, $worker_id)
@@ -385,7 +385,7 @@ abstract class Server
 
     final public function onClose(\swoole_server $server, $fd, $from_id)
     {
-        unset($this->taskInfo[$fd]);
+        //unset($this->taskInfo[$fd]);
     }
 
 
