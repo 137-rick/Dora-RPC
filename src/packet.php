@@ -17,7 +17,13 @@ class Packet
 
     public static function packEncode($data)
     {
+
         $sendStr = serialize($data);
+
+        //if compress the packet
+        if (DoraConst::SW_DATACOMPRESS_FLAG == true) {
+            $sendStr = gzencode($sendStr, 2);
+        }
 
         if (DoraConst::SW_DATASIGEN_FLAG == true) {
             $signedcode = pack('N', crc32($sendStr . DoraConst::SW_DATASIGEN_SALT));
@@ -55,6 +61,10 @@ class Packet
             echo "error length...\n";
 
             return self::packFormat("packet length invalid 包长度非法", 100007);
+        }
+        //if compress the packet
+        if (DoraConst::SW_DATACOMPRESS_FLAG == true) {
+            $result = gzdecode($result);
         }
         $result = unserialize($result);
 
