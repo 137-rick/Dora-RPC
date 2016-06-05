@@ -9,28 +9,33 @@ $config = array(
 );
 
 $obj = new \DoraRPC\Client($config);
-for ($i = 0; $i < 1000; $i++) {
+for ($i = 0; $i < 10000; $i++) {
+    //echo $i . PHP_EOL;
+
+    $time = microtime(true);
     //single && sync
-    $ret = $obj->singleAPI("abc", array(234, $i), true, 1);
-    var_dump($ret);
+    $ret = $obj->singleAPI("abc" . $i, array(234, $i), true, 1);
+//    var_dump($ret);
 
     //single call && async
-    $ret = $obj->singleAPI("abc", array(234, $i), false, 1);
+    $ret = $obj->singleAPI("abc" . $i, array(234, $i), false, 1);
     var_dump($ret);
 
     //multi && sync
     $data = array(
-        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
-        "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
+        "oak" => array("name" => "oakdf" . $i, "param" => array("dsaf" => "321321")),
+        "cd" => array("name" => "oakdfff" . $i, "param" => array("codo" => "fds")),
     );
     $ret = $obj->multiAPI($data, false, 1);
-    var_dump($ret);
+      var_dump($ret);
 
     //multi && async
     $data = array(
-        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "32111321")),
-        "cd" => array("name" => "oakdfff", "param" => array("codo" => "f11ds")),
+        "oak" => array("name" => "oakdf" . $i, "param" => array("dsaf" => "32111321")),
+        "cd" => array("name" => "oakdfff" . $i, "param" => array("codo" => "f11ds")),
     );
     $ret = $obj->multiAPI($data, true, 1);
     var_dump($ret);
+    echo $i." cost:" . (bcsub(microtime(true), $time, 5)).PHP_EOL;
+    //var_dump($ret);
 }

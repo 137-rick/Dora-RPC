@@ -260,7 +260,7 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 
 ----------
 ###测试结果Result
-> * TPS 2100
+> * 1 Thread QPS 4500
 > * Response Time:0.02~0.04/sec
 > * CPU 10~25%
 以上还有很大优化空间

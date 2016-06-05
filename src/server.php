@@ -267,13 +267,13 @@ abstract class Server
 
     final public function onTask($serv, $task_id, $from_id, $data)
     {
-        swoole_set_process_name("phptask|{$task_id}|" . $data["api"]["name"] . "");
+//        swoole_set_process_name("phptask|{$task_id}_{$from_id}|" . $data["api"]["name"] . "");
         try {
             $data["result"] = $this->doWork($data);
         } catch (\Exception $e) {
             $data["result"] = Packet::packFormat($e->getMessage(), $e->getCode());
         }
-
+/*
         //fixed the result more than 8k timeout bug
         $data = serialize($data);
         if (strlen($data) > 8000) {
@@ -283,6 +283,8 @@ abstract class Server
         } else {
             return $data;
         }
+*/
+        return $data;
     }
 
     abstract public function doWork($param);
@@ -320,6 +322,7 @@ abstract class Server
 
     final public function onFinish($serv, $task_id, $data)
     {
+        /*
         //fixed the result more than 8k timeout bug
         if (strpos($data, '$$$$$$$$') === 0) {
             $tmp_path = substr($data, 8);
@@ -327,7 +330,7 @@ abstract class Server
             unlink($tmp_path);
         }
         $data = unserialize($data);
-
+*/
         $fd = $data["fd"];
 
         if (!isset($this->taskInfo[$fd]) ) {

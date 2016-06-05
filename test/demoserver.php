@@ -12,15 +12,15 @@ class Server extends \DoraRPC\Server
 
         //to improve the accept performance ,suggest the number of cpu X 2
         //如果想提高请求接收能力，更改这个，推荐cpu个数x2
-        'reactor_num' => 32,
+        'reactor_num' => 16,
 
         //packet decode process,change by condition
         //包处理进程，根据情况调整数量
-        'worker_num' => 40,
+        'worker_num' => 20,
 
         //the number of task logical process progcessor run you business code
         //实际业务处理进程，根据需要进行调整
-        'task_worker_num' => 20,
+        'task_worker_num' => 200,
 
         'daemonize' => false,
 

@@ -139,7 +139,7 @@ class GroupClient
 
     public function getStat($ip = "", $port = "")
     {
-        $guid = md5(uniqid() . microtime(true) . rand(1, 1000000));
+        $guid = md5( microtime(true) . ,mt_rand(1, 1000000) . mt_rand(1, 1000000));
         $Packet = array(
             'guid' => $guid,
             'api' => array(
