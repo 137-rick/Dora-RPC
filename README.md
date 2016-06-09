@@ -18,7 +18,7 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 
 #功能支持(Function)
 > * 支持单API调用，多API并发调用
-> * 支持同步调用，异步任务下发
+> * 支持同步调用，异步任务下发不等待结果，异步任务下发统一拿回结果
 > * 其他相关知识请参考Swoole扩展
 > * 客户端长链接，请求完毕后仍旧保留，减少握手消耗
 > * guid收发一致性检测，避免发送和接收数据不一致
@@ -27,7 +27,7 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 ----------
 
 > * Single API RPC \ Multi API Concurrent RPC
-> * Asynchronous synchronization
+> * Asynchronous，synchronization no need result， synchronization get result by manual
 > * Please visit Swoole official for further infomation
 > * keep the connection of client after the request finishe
 > * check the guid when the send<->recive
@@ -96,28 +96,74 @@ composer update
 
 ###客户端(Client)
 ```
-include "src/client.php";
+include "../src/doraconst.php";
+include "../src/packet.php";
+include "../src/client.php";
 
-//app server config 
 $config = array(
-    array("ip"=>"127.0.0.1","port"=>9567),
+    array("ip" => "127.0.0.1", "port" => 9567),
     //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
 );
 
-$obj = new DoraRPCClient($config);
-for ($i = 0; $i < 100000; $i++) {
+$maxrequest = 0;
+
+$obj = new \DoraRPC\Client($config);
+for ($i = 0; $i < 10000; $i++) {
+    //echo $i . PHP_EOL;
+
+    //---------single
+    $time = microtime(true);
+
     //single && sync
-    $ret = $obj->singleAPI("abc", array(234, $i), false,1);
-    var_dump($ret);
+    $ret = $obj->singleAPI("/module_a/abc" . $i, array("mark" => 234, "foo" => $i), \DoraRPC\DoraConst::SW_MODE_WAITRESULT, 1);
+    var_dump("single sync", $ret);
+
+    //single call && async
+    $ret = $obj->singleAPI("/module_b/abc" . $i, array("yes" => 21321, "foo" => $i), \DoraRPC\DoraConst::SW_MODE_NORESULT, 1);
+    var_dump("single async", $ret);
+
+    //single call && async
+    $ret = $obj->singleAPI("/module_c/abd" . $i, array("yes" => 233, "foo" => $i), \DoraRPC\DoraConst::SW_MODE_ASYNCRESULT, 1);
+    var_dump("single async result", $ret);
+
+    //---------multi
+
+    //multi && sync
+    $data = array(
+        "oak" => array("name" => "/module_c/dd" . $i, "param" => array("uid" => "ff")),
+        "cd" => array("name" => "/module_f/ef" . $i, "param" => array("pathid" => "fds")),
+    );
+    $ret = $obj->multiAPI($data, \DoraRPC\DoraConst::SW_MODE_WAITRESULT, 1);
+    var_dump("multi sync", $ret);
 
     //multi && async
     $data = array(
-        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
-        "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
+        "oak" => array("name" => "/module_d/oakdf" . $i, "param" => array("dsaf" => "32111321")),
+        "cd" => array("name" => "/module_e/oakdfff" . $i, "param" => array("codo" => "f11ds")),
     );
-    $ret = $obj->multiAPI($data, true,1);
-    var_dump($ret);
+    $ret = $obj->multiAPI($data, \DoraRPC\DoraConst::SW_MODE_NORESULT, 1);
+    var_dump("multi async", $ret);
+
+    //multi && async
+    $data = array(
+        "oak" => array("name" => "/module_a/oakdf" . $i, "param" => array("dsaf" => "11")),
+        "cd" => array("name" => "/module_b/oakdfff" . $i, "param" => array("codo" => "f11ds")),
+    );
+    $ret = $obj->multiAPI($data, \DoraRPC\DoraConst::SW_MODE_ASYNCRESULT, 1);
+    var_dump("multi async result", $ret);
+
+    //get all the async result
+    $data = $obj->getAsyncData();
+    var_dump("allresult", $data);
+    //compare each request
+    $time = bcsub(microtime(true), $time, 5);
+    if ($time > $maxrequest) {
+        $maxrequest = $time;
+    }
+    echo $i . " cost:" . $time . PHP_EOL;
+    //var_dump($ret);
 }
+echo "max:" . $maxrequest . PHP_EOL;
 ```
 
 ----------
@@ -250,6 +296,9 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100009 the recive wrong or timeout
 > * 100010 there is no server can connect
 > * 100011 unknow cmd of controlle
+> * 100012 Get Async Result Fail: Client Closed.
+> * 100099 unknow communicate mode have been set
+> * 100100 guid wront please retry..
 
 ----------
 

@@ -16,7 +16,7 @@ class Server extends \DoraRPC\Server
 
         //packet decode process,change by condition
         //包处理进程，根据情况调整数量
-        'worker_num' => 20,
+        'worker_num' => 30,
 
         //the number of task logical process progcessor run you business code
         //实际业务处理进程，根据需要进行调整
@@ -39,6 +39,8 @@ class Server extends \DoraRPC\Server
     {
         //process you logical 业务实际处理代码仍这里
         //return the result 使用return返回处理结果
+        //throw new Exception("asbddddfds",1231);
+
         return array("hehe" => "ohyes");
     }
 

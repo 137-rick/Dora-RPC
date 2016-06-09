@@ -158,90 +158,94 @@ abstract class Server
 
     final public function onReceive(\swoole_server $serv, $fd, $from_id, $data)
     {
-        $reqa = Packet::packDecode($data);
+        //todo:have taskid+fromid
+        $requestInfo = Packet::packDecode($data);
+
         #decode error
-        if ($reqa["code"] != 0) {
-            $req = Packet::packEncode($reqa);
+        if ($requestInfo["code"] != 0) {
+            $pack["guid"] = $requestInfo["guid"];
+            $req = Packet::packEncode($requestInfo);
             $serv->send($fd, $req);
 
             return true;
         } else {
-            $req = $reqa["data"];
+            $requestInfo = $requestInfo["data"];
         }
 
         #api not set
-        if (!is_array($req["api"]) && count($req["api"])) {
+        if (!is_array($requestInfo["api"]) && count($requestInfo["api"])) {
             $pack = Packet::packFormat("param api is empty", 100003);
-            $pack["guid"] = $req["guid"];
+            $pack["guid"] = $requestInfo["guid"];
             $pack = Packet::packEncode($pack);
             $serv->send($fd, $pack);
 
             return true;
         }
+        $guid = $requestInfo["guid"];
 
-        $this->taskInfo[$fd] = $req;
+        //$this->taskInfo[$fd][$guid] = $req;
 
         $task = array(
-            "type" => $this->taskInfo[$fd]["type"],
-            "guid" => $this->taskInfo[$fd]["guid"],
+            "type" => $requestInfo["type"],
+            "guid" => $requestInfo["guid"],
             "fd" => $fd,
+            "type" => $requestInfo["type"]
         );
 
-        switch ($this->taskInfo[$fd]["type"]) {
+        switch ($requestInfo["type"]) {
 
-            case DoraConst::SW_SYNC_SINGLE:
-                $task["api"] = $this->taskInfo[$fd]["api"]["one"];
+            case DoraConst::SW_MODE_WAITRESULT_SINGLE:
+                $task["api"] = $requestInfo["api"]["one"];
                 $taskid = $serv->task($task);
 
-                $this->taskInfo[$fd]["task"][$taskid] = "one";
+                //result with task key
+                $this->taskInfo[$fd][$guid]["taskkey"][$taskid] = "one";
 
                 return true;
                 break;
-            case DoraConst::SW_ASYNC_SINGLE:
-                $task["api"] = $this->taskInfo[$fd]["api"]["one"];
+            case DoraConst::SW_MODE_NORESULT_SINGLE:
+                $task["api"] = $requestInfo["api"]["one"];
                 $serv->task($task);
 
+                //return success deploy
                 $pack = Packet::packFormat("transfer success.已经成功投递", 100001);
                 $pack["guid"] = $task["guid"];
                 $pack = Packet::packEncode($pack);
                 $serv->send($fd, $pack);
 
-                unset($this->taskInfo[$fd]);
-
                 return true;
 
                 break;
 
-            case DoraConst::SW_SYNC_MULTI:
-                foreach ($req["api"] as $k => $v) {
-                    $task["api"] = $this->taskInfo[$fd]["api"][$k];
+            case DoraConst::SW_MODE_WAITRESULT_MULTI:
+                foreach ($requestInfo["api"] as $k => $v) {
+                    $task["api"] = $requestInfo["api"][$k];
                     $taskid = $serv->task($task);
-                    $this->taskInfo[$fd]["task"][$taskid] = $k;
+                    $this->taskInfo[$fd][$guid]["taskkey"][$taskid] = $k;
                 }
 
                 return true;
                 break;
-            case DoraConst::SW_ASYNC_MULTI:
-                foreach ($req["api"] as $k => $v) {
-                    $task["api"] = $this->taskInfo[$fd]["api"][$k];
+            case DoraConst::SW_MODE_NORESULT_MULTI:
+                foreach ($requestInfo["api"] as $k => $v) {
+                    $task["api"] = $requestInfo["api"][$k];
                     $serv->task($task);
                 }
+
                 $pack = Packet::packFormat("transfer success.已经成功投递", 100001);
                 $pack["guid"] = $task["guid"];
                 $pack = Packet::packEncode($pack);
 
                 $serv->send($fd, $pack);
-                unset($this->taskInfo[$fd]);
 
                 return true;
                 break;
             case DoraConst::SW_CONTROL_CMD:
-                if ($this->taskInfo[$fd]["api"]["cmd"]["name"] == "getStat") {
+                if ($requestInfo["api"]["cmd"]["name"] == "getStat") {
                     $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
                     $pack["guid"] = $task["guid"];
                     $pack = Packet::packEncode($pack);
                     $serv->send($fd, $pack);
-                    unset($this->taskInfo[$fd]);
                     return true;
                 }
 
@@ -251,6 +255,34 @@ abstract class Server
 
                 $serv->send($fd, $pack);
                 unset($this->taskInfo[$fd]);
+                break;
+
+            case DoraConst::SW_MODE_ASYNCRESULT_SINGLE:
+                $task["api"] = $requestInfo["api"]["one"];
+                $taskid = $serv->task($task);
+                $this->taskInfo[$fd][$guid]["taskkey"][$taskid] = "one";
+
+                //return success
+                $pack = Packet::packFormat("transfer success.已经成功投递", 100001);
+                $pack["guid"] = $task["guid"];
+                $pack = Packet::packEncode($pack);
+                $serv->send($fd, $pack);
+
+                return true;
+                break;
+            case DoraConst::SW_MODE_ASYNCRESULT_MULTI:
+                foreach ($requestInfo["api"] as $k => $v) {
+                    $task["api"] = $requestInfo["api"][$k];
+                    $taskid = $serv->task($task);
+                    $this->taskInfo[$fd][$guid]["taskkey"][$taskid] = $k;
+                }
+
+                //return success
+                $pack = Packet::packFormat("transfer success.已经成功投递", 100001);
+                $pack["guid"] = $task["guid"];
+                $pack = Packet::packEncode($pack);
+
+                $serv->send($fd, $pack);
                 break;
             default:
                 $pack = Packet::packFormat("unknow task type.未知类型任务", 100002);
@@ -269,21 +301,21 @@ abstract class Server
     {
 //        swoole_set_process_name("phptask|{$task_id}_{$from_id}|" . $data["api"]["name"] . "");
         try {
-            $data["result"] = $this->doWork($data);
+            $data["result"] = Packet::packFormat("OK", 0, $this->doWork($data));
         } catch (\Exception $e) {
             $data["result"] = Packet::packFormat($e->getMessage(), $e->getCode());
         }
-/*
-        //fixed the result more than 8k timeout bug
-        $data = serialize($data);
-        if (strlen($data) > 8000) {
-            $temp_file = tempnam(sys_get_temp_dir(), 'swmore8k');
-            file_put_contents($temp_file, $data);
-            return '$$$$$$$$' . $temp_file;
-        } else {
-            return $data;
-        }
-*/
+        /*
+                //fixed the result more than 8k timeout bug
+                $data = serialize($data);
+                if (strlen($data) > 8000) {
+                    $temp_file = tempnam(sys_get_temp_dir(), 'swmore8k');
+                    file_put_contents($temp_file, $data);
+                    return '$$$$$$$$' . $temp_file;
+                } else {
+                    return $data;
+                }
+        */
         return $data;
     }
 
@@ -300,8 +332,9 @@ abstract class Server
      * 获取上报的服务器IP
      * @return string
      */
-    protected function getReportServerIP() {
-        if($this->serverIP == '0.0.0.0' || $this->serverIP == '127.0.0.1') {
+    protected function getReportServerIP()
+    {
+        if ($this->serverIP == '0.0.0.0' || $this->serverIP == '127.0.0.1') {
             $serverIps = swoole_get_local_ip();
             $patternArray = array(
                 '10\.',
@@ -310,9 +343,9 @@ abstract class Server
                 '172\.31\.',
                 '192\.168\.'
             );
-            foreach($serverIps as $serverIp) {
+            foreach ($serverIps as $serverIp) {
                 // 匹配内网IP
-                if(preg_match('#^'.implode('|', $patternArray).'#', $serverIp)) {
+                if (preg_match('#^' . implode('|', $patternArray) . '#', $serverIp)) {
                     return $serverIp;
                 }
             }
@@ -330,50 +363,85 @@ abstract class Server
             unlink($tmp_path);
         }
         $data = unserialize($data);
-*/
+        */
+
         $fd = $data["fd"];
+        $guid = $data["guid"];
 
-        if (!isset($this->taskInfo[$fd]) ) {
-            unset($this->taskInfo[$fd]);
-
+        //if the guid not exists .it's mean the api no need return result
+        if (!isset($this->taskInfo[$fd][$guid])) {
             return true;
         }
 
-        $key = $this->taskInfo[$fd]["task"][$task_id];
-        $this->taskInfo[$fd]["result"][$key] = $data["result"];
+        //get the api key
+        $key = $this->taskInfo[$fd][$guid]["taskkey"][$task_id];
 
-        unset($this->taskInfo[$fd]["task"][$task_id]);
+        //save the result
+        $this->taskInfo[$fd][$guid]["result"][$key] = $data["result"];
+
+        //remove the used guid
+        unset($this->taskInfo[$fd][$guid]["taskkey"][$task_id]);
 
         switch ($data["type"]) {
 
-            case DoraConst::SW_SYNC_SINGLE:
+            case DoraConst::SW_MODE_WAITRESULT_SINGLE:
                 $Packet = Packet::packFormat("OK", 0, $data["result"]);
-                $Packet["guid"] = $this->taskInfo[$fd]["guid"];
+                $Packet["guid"] = $guid;
                 $Packet = Packet::packEncode($Packet);
 
-                //sys_get_temp_dir
                 $serv->send($fd, $Packet);
-                unset($this->taskInfo[$fd]);
+                unset($this->taskInfo[$fd][$guid]);
 
                 return true;
                 break;
 
-            case DoraConst::SW_SYNC_MULTI:
-                if (count($this->taskInfo[$fd]["task"]) == 0) {
-                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd]["result"]);
-                    $Packet["guid"] = $this->taskInfo[$fd]["guid"];
+            case DoraConst::SW_MODE_WAITRESULT_MULTI:
+                if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
+                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
+                    $Packet["guid"] = $guid;
                     $Packet = Packet::packEncode($Packet);
                     $serv->send($fd, $Packet);
-                    unset($this->taskInfo[$fd]);
+                    unset($this->taskInfo[$fd][$guid]);
 
                     return true;
                 } else {
+                    //not finished
+                    //waiting other result
                     return true;
                 }
                 break;
 
+            case DoraConst::SW_MODE_ASYNCRESULT_SINGLE:
+                $Packet = Packet::packFormat("OK", 0, $data["result"]);
+                $Packet["guid"] = $guid;
+                //flag this is result
+                $Packet["isresult"] = 1;
+                $Packet = Packet::packEncode($Packet);
+
+                //sys_get_temp_dir
+                $serv->send($fd, $Packet);
+                unset($this->taskInfo[$fd][$guid]);
+
+                return true;
+                break;
+            case DoraConst::SW_MODE_ASYNCRESULT_MULTI:
+                if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
+                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
+                    $Packet["guid"] = $guid;
+                    $Packet["isresult"] = 1;
+                    $Packet = Packet::packEncode($Packet);
+                    $serv->send($fd, $Packet);
+
+                    unset($this->taskInfo[$fd][$guid]);
+
+                    return true;
+                } else {
+                    //not finished
+                    //waiting other result
+                    return true;
+                }
+                break;
             default:
-                unset($this->taskInfo[$fd]);
 
                 return true;
                 break;

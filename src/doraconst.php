@@ -3,12 +3,24 @@ namespace DoraRPC;
 
 class DoraConst
 {
-    const SW_SYNC_SINGLE = 'SSS';
-    const SW_ASYNC_SINGLE = 'SRS';
+    const SW_MODE_WAITRESULT = 0;
+    const SW_MODE_NORESULT = 1;
+    const SW_MODE_ASYNCRESULT = 2;
 
-    const SW_SYNC_MULTI = 'SSM';
-    const SW_ASYNC_MULTI = 'SRM';
+    //sync wait task result
+    //任务下发后阻塞等待结果
+    const SW_MODE_WAITRESULT_SINGLE = 'W_S';
+    const SW_MODE_WAITRESULT_MULTI = 'W_M';
 
+    //async no need task result
+    const SW_MODE_NORESULT_SINGLE = 'AN_S';
+    const SW_MODE_NORESULT_MULTI = 'AN_M';
+
+    //async send task and at end of code manual get result
+    const SW_MODE_ASYNCRESULT_SINGLE = 'AM_S';
+    const SW_MODE_ASYNCRESULT_MULTI = 'AM_M';
+
+    //cmd for the server
     const SW_CONTROL_CMD = 'SC';
 
     //timeout limit when recive second
