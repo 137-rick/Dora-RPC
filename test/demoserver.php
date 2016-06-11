@@ -72,4 +72,4 @@ $redisconfig = array(
     ),
 );
 //ok start server
-$res = new Server("192.168.33.11", 9567, $groupConfig, $redisconfig);
+$res = new Server("0.0.0.0", 9567, $groupConfig, $redisconfig);
