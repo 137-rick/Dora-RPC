@@ -13,6 +13,8 @@ class Monitor
     //server report
     final public function generalConfig(\swoole_process $process)
     {
+        swoole_set_process_name("php monitor service discovery");
+
         static $_redisObj = array();
 
         while (true) {
@@ -52,9 +54,10 @@ class Monitor
                                     }
                                     //foreach group and record this info
                                     foreach ($info["group"] as $groupname) {
+                                        $clientkey = $info["node"]["ip"] . "_" . $info["node"]["port"];
 
-                                        $server_list_result[$groupname][$key] = $info;
-                                        $server_list_result[$groupname][$key]["updatetime"] = $lastupdatetime;
+                                        $server_list_result[$groupname][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
+                                        $server_list_result[$groupname][$clientkey]["updatetime"] = $lastupdatetime;
                                     }
 
                                 }//decode info if
@@ -70,6 +73,7 @@ class Monitor
             }
 
             if (count($server_list_result) > 0) {
+
                 $configString = var_export($server_list_result, true);
                 $ret = file_put_contents($this->_config["export_path"], "<?php" . PHP_EOL . "//This is generaled by client monitor" . PHP_EOL . "return " . $configString . ";");
                 if (!$ret) {
@@ -86,7 +90,7 @@ class Monitor
         }
     }
 
-    public function __construct($ip = "0.0.0.0", $port = 9569, $reportConfig = array(), $exportpath = "./client.conf.php")
+    public function __construct($ip = "0.0.0.0", $port = 9569, $Config = array())
     {
 
         //record ip:port
@@ -109,8 +113,8 @@ class Monitor
             'heartbeat_check_interval' => 5,
             'heartbeat_idle_time' => 10,
 
-            'reactor_num' => 2,
-            'worker_num' => 40,
+            'reactor_num' => 1,
+            'worker_num' => 2,
             'task_worker_num' => 0,
 
             'max_request' => 0, //必须设置为0否则并发任务容易丢,don't change this number
@@ -128,21 +132,27 @@ class Monitor
         echo "Start Init Server udp://" . $ip . ":" . $port . PHP_EOL;
 
         //store the list of redis
-        $this->_config["redis"] = $reportConfig;
+        $this->_config["redis"] = $Config["Discovery"];
 
-        //store the avaliable node list to this file
-        $this->_config["export_path"] = $exportpath;
+        //store the avaliable node list to this config file
+        $this->_config["export_path"] = $Config["Config"];
+
+        //log monitor path
+        $this->_config["log_path"] = $Config["Log"];
 
         //use this for generalConfig by cycle
-        $process = new \swoole_process(array($this, "generalConfig"));
-        $this->_server->addProcess($process);
+        if (count($this->_config["export_path"]) > 0) {
+            echo "Setup The Service Discovery Config and Process...Start" . PHP_EOL;
+            $process = new \swoole_process(array($this, "generalConfig"));
+            $this->_server->addProcess($process);
+        }
 
         //start server
         $ret = $this->_server->start();
         if ($ret) {
-            echo "Server Start Success...";
+            echo "Server Start Success..." . PHP_EOL;
         } else {
-            echo "Server Start Fail...Exit";
+            echo "Server Start Fail...Exit" . PHP_EOL;
             exit;
         }
     }

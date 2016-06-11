@@ -3,36 +3,20 @@
 return array (
   'group1' => 
   array (
-    '127.0.0.1_6379' => 
+    '192.168.33.11_9567' => 
     array (
-      'node' => 
-      array (
-        'ip' => '0.0.0.0',
-        'port' => 9567,
-      ),
-      'group' => 
-      array (
-        0 => 'group1',
-        1 => 'group2',
-      ),
-      'updatetime' => '1452084033',
+      'ip' => '192.168.33.11',
+      'port' => 9567,
+      'updatetime' => '1465639979',
     ),
   ),
   'group2' => 
   array (
-    '127.0.0.1_6379' => 
+    '192.168.33.11_9567' => 
     array (
-      'node' => 
-      array (
-        'ip' => '0.0.0.0',
-        'port' => 9567,
-      ),
-      'group' => 
-      array (
-        0 => 'group1',
-        1 => 'group2',
-      ),
-      'updatetime' => '1452084033',
+      'ip' => '192.168.33.11',
+      'port' => 9567,
+      'updatetime' => '1465639979',
     ),
   ),
 );

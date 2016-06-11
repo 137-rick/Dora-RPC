@@ -100,12 +100,15 @@ include "../src/doraconst.php";
 include "../src/packet.php";
 include "../src/client.php";
 
+/*
 $config = array(
     "group1" => array(
         array("ip" => "127.0.0.1", "port" => 9567),
         //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
     ),
-);
+);*/
+//or
+$config = include("client.conf.php");
 //define the mode
 $mode = array("type" => 1, "group" => "group1");
 
