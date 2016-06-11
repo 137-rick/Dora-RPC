@@ -4,13 +4,22 @@ include "../src/packet.php";
 include "../src/client.php";
 
 $config = array(
-    array("ip" => "127.0.0.1", "port" => 9567),
-    //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
+    "group1" => array(
+        array("ip" => "127.0.0.1", "port" => 9567),
+        //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
+    ),
 );
+//define the mode
+$mode = array("type" => 1, "group" => "group1");
 
 $maxrequest = 0;
 
+//new obj
 $obj = new \DoraRPC\Client($config);
+
+//change connect mode
+$obj->changeMode($mode);
+
 for ($i = 0; $i < 10000; $i++) {
     //echo $i . PHP_EOL;
 

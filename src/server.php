@@ -99,7 +99,6 @@ abstract class Server
         static $_redisObj;
 
         while (true) {
-            echo "Report Node for Discovery" . PHP_EOL;
             //register group and server
             $redisconfig = $this->reportConfig;
             //register this node server info to redis
@@ -121,11 +120,11 @@ abstract class Server
                         //set time out
                         $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $this->serverPort . ".time", time());
 
-                        echo "Report to Server:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
+                        echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
 
                     } catch (\Exception $ex) {
                         $_redisObj[$key] = null;
-                        echo "report to server error:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
+                        echo "connect to Service Discovery error:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
                     }
                 }
             }

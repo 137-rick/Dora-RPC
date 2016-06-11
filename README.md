@@ -101,13 +101,22 @@ include "../src/packet.php";
 include "../src/client.php";
 
 $config = array(
-    array("ip" => "127.0.0.1", "port" => 9567),
-    //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
+    "group1" => array(
+        array("ip" => "127.0.0.1", "port" => 9567),
+        //array("ip"=>"127.0.0.1","port"=>9567), you can set more ,the client will random select one,to increase High availability
+    ),
 );
+//define the mode
+$mode = array("type" => 1, "group" => "group1");
 
 $maxrequest = 0;
 
+//new obj
 $obj = new \DoraRPC\Client($config);
+
+//change connect mode
+$obj->changeMode($mode);
+
 for ($i = 0; $i < 10000; $i++) {
     //echo $i . PHP_EOL;
 
@@ -155,15 +164,16 @@ for ($i = 0; $i < 10000; $i++) {
     //get all the async result
     $data = $obj->getAsyncData();
     var_dump("allresult", $data);
+    
     //compare each request
     $time = bcsub(microtime(true), $time, 5);
     if ($time > $maxrequest) {
         $maxrequest = $time;
     }
     echo $i . " cost:" . $time . PHP_EOL;
-    //var_dump($ret);
 }
 echo "max:" . $maxrequest . PHP_EOL;
+
 ```
 
 ----------
@@ -234,48 +244,7 @@ $redisconfig = array(
 $res = new \DoraRPC\Monitor("0.0.0.0", 9569, $redisconfig, "./client.conf.php");
 //this server will auto get the node server list from redis and general the client config on special path
 ```
-----------
-###使用客户端监控器配置的客户端(Client using Local Monitor Config)
-```
-<?php
-include "../src/doraconst.php";
-include "../src/packet.php";
-include "../src/groupclient.php";
 
-$config = "client.conf.php";
-
-$obj = new \DoraRPC\GroupClient($config);
-
-$ret = $obj->singleAPI("abc", array(123, 123), "group1", true, 1);
-var_dump($ret);
-
-for ($i = 0; $i < 1000; $i++) {
-    //single && sync
-    $ret = $obj->singleAPI("abc", array(234, $i), "group1", true, 1);
-    var_dump($ret);
-
-    //single call && async
-    $ret = $obj->singleAPI("abc", array(234, $i), "group1", false, 1);
-    var_dump($ret);
-
-    //multi && sync
-    $data = array(
-        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "321321")),
-        "cd" => array("name" => "oakdfff", "param" => array("codo" => "fds")),
-    );
-    $ret = $obj->multiAPI($data, "group1", false, 1);
-    var_dump($ret);
-
-    //multi && async
-    $data = array(
-        "oak" => array("name" => "oakdf", "param" => array("dsaf" => "32111321")),
-        "cd" => array("name" => "oakdfff", "param" => array("codo" => "f11ds")),
-    );
-    $ret = $obj->multiAPI($data, "group1", true, 1);
-    var_dump($ret);
-}
-
-```
 
 ----------
 

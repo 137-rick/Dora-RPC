@@ -19,14 +19,32 @@ class Client
     //for the async task result
     private static $asynresult = array();
 
-    //current using client obj key on static client array
-    private $currentClientKey = "";
-
     //client config array
     private $serverConfig = array();
 
     //when connect fail will block error config
     private $serverConfigBlock = array();
+
+    //this request guid
+    private $guid;
+
+    //1 random from specify group,2 specify by ip port
+    //1 随机从指定group名称内选择客户端，2 指定ip进行连接
+    private $connectMode = 0;
+
+    //是否使用上一次已连接connectclient
+    //用于减少单机长链接数
+    //private $connectReuse = true;
+
+    //current connect ip port
+    private $connectIp = "";
+    private $connectPort = 0;
+
+    //config group name
+    private $connectGroup = "";
+
+    //current using client obj key on static client array
+    private $currentClientKey = "";
 
     public function __construct($serverConfig)
     {
@@ -37,53 +55,111 @@ class Client
         $this->serverConfig = $serverConfig;
     }
 
+    //$param = array("type"=>1,"group"=>"group1");
+    //$param = array("type"=>2,"ip"=>"127.0.0.1","port"=>9567);
+
+    /**
+     * 更换连接模式，用于指定ip请求和普通请求切换
+     * @param $param
+     * @throws \Exception unknow mode parameter
+     */
+    public function changeMode($param)
+    {
+        if ($param["type"] == 1) {
+            if ($param["type"] == "" || $param["group"] == "") {
+                throw new \Exception("change mode parameter is wrong", -1);
+            }
+            $this->connectMode = 1;
+            $this->connectGroup = $param["group"];
+            $this->connectIp = "";
+            $this->connectPort = "";
+            $this->currentClientKey = "";
+        } else if ($param["type"] == 2) {
+
+            if ($param["type"] == "" || $param["ip"] == "" || $param["port"] == "") {
+                throw new \Exception("change mode parameter is wrong", -1);
+            }
+            $this->connectMode = 2;
+            $this->connectGroup = "default";
+            $this->connectIp = $param["ip"];
+            $this->connectPort = $param["port"];
+            $this->currentClientKey = "";
+
+        } else {
+            throw new \Exception("change mode parameter is wrong", -1);
+        }
+    }
+
+    /**
+     * 返回当前连接模式及相关信息
+     * @return array
+     * @throws \Exception unknow mode
+     */
+    public function getConnectMode()
+    {
+        if ($this->connectMode == 1) {
+            return array("type" => 1, "group" => $this->connectGroup, "ip" => $this->connectIp, "port" => $this->connectPort);
+        } else if ($this->connectMode == 2) {
+            return array("type" => 2, "group" => "", "ip" => $this->connectIp, "port" => $this->connectPort);
+        } else {
+            throw new \Exception("current connect mode is unknow", -1);
+        }
+    }
+
     //random get config key
     private function getConfigObjKey()
     {
 
+        if (!isset($this->serverConfig[$this->connectGroup])) {
+            throw new \Exception("there is no one server can connect", 100010);
+        }
         // if there is no config can use clean up the block list
-        if (count($this->serverConfig) <= count($this->serverConfigBlock)) {
+        if (isset($this->serverConfigBlock[$this->connectGroup]) &&
+            count($this->serverConfig[$this->connectGroup]) <= count($this->serverConfigBlock[$this->connectGroup])
+        ) {
             //clean up the block list
-            $this->serverConfigBlock = array();
+            $this->serverConfigBlock[$this->connectGroup] = array();
         }
 
         //if not specified the ip and port random get one
         do {
             //get one config by random
-            $key = array_rand($this->serverConfig);
+            $key = array_rand($this->serverConfig[$this->connectGroup]);
 
             //if not on the block list.
-            if (!isset($this->serverConfigBlock[$key])) {
+            if (!isset($this->serverConfigBlock[$this->connectGroup][$key])) {
                 return $key;
             }
 
-        } while (count($this->serverConfig) > count($this->serverConfigBlock));
+        } while (count($this->serverConfig[$this->connectGroup]) > count($this->serverConfigBlock));
 
         throw new \Exception("there is no one server can connect", 100010);
 
     }
 
     //get current client
-    private function getClientObj($ip = "", $port = "")
+    private function getClientObj()
     {
         //config obj key
         $key = "";
 
         //if not spc will random
-        if ($ip == "" && $port == "") {
+        if ($this->connectMode == 1) {
             $key = $this->getConfigObjKey();
-            $clientKey = $this->serverConfig[$key]["ip"] . "_" . $this->serverConfig[$key]["port"];
+            $clientKey = $this->serverConfig[$this->connectGroup][$key]["ip"] . "_" . $this->serverConfig[$this->connectGroup][$key]["port"];
             //set the current client key
             $this->currentClientKey = $clientKey;
-            $connectHost = $this->serverConfig[$key]["ip"];
-            $connectPort = $this->serverConfig[$key]["port"];
-        } else {
+            $connectHost = $this->serverConfig[$this->connectGroup][$key]["ip"];
+            $connectPort = $this->serverConfig[$this->connectGroup][$key]["port"];
+        } else if ($this->connectMode == 2) {
             //using spec
-            $clientKey = trim($ip) . "_" . trim($port);
+            $clientKey = trim($this->connectIp) . "_" . trim($this->connectPort);
             //set the current client key
             $this->currentClientKey = $clientKey;
-            $connectHost = $ip;
-            $connectPort = $port;
+            $connectHost = $this->connectIp;
+            $connectPort = $this->connectPort;
+        } else {
+            throw new \Exception("current connect mode is unknow", -1);
         }
 
         if (!isset(self::$client[$clientKey])) {
@@ -107,11 +183,12 @@ class Client
                     $msg = socket_strerror($errorCode);
                 }
 
-                if ($key != "") {
+                if ($key !== "") {
                     //put the fail connect config to block list
-                    $this->serverConfigBlock[$key] = 1;
+                    $this->serverConfigBlock[$this->connectGroup][$key] = 1;
                 }
-                throw new \Exception($msg, $errorCode);
+
+                throw new \Exception($msg . " " . $clientKey, $errorCode);
             }
 
             self::$client[$clientKey] = $client;
@@ -130,10 +207,17 @@ class Client
 
     public function getStat($ip = "", $port = "")
     {
-        $guid = $this->generateGuid();
+        $beformode = $this->getConnectMode();
+
+        if ($ip != "" && $port != "") {
+            $mode = array("type" => 2, "ip" => $ip, "port" => $port);
+            $this->changeMode($mode);
+        }
+
+        $this->guid = $this->generateGuid();
 
         $Packet = array(
-            'guid' => $guid,
+            'guid' => $this->guid,
             'api' => array(
                 "cmd" => array(
                     'name' => "getStat",
@@ -144,12 +228,17 @@ class Client
         );
 
         $sendData = Packet::packEncode($Packet);
-        $result = $this->doRequest($sendData, DoraConst::SW_CONTROL_CMD, $guid, $ip, $port);
+        $result = $this->doRequest($sendData, DoraConst::SW_MODE_WAITRESULT_SINGLE);
 
-        if ($guid != $result["data"]["guid"]) {
+        if ($this->guid != $result["guid"]) {
             return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
         }
 
+        //revert befor connect mode
+        if ($ip != "" && $port != "") {
+            //revert befor mode
+            $this->changeMode($beformode);
+        }
         return $result["data"];
     }
 
@@ -178,10 +267,10 @@ class Client
     public function singleAPI($name, $param, $mode = DoraConst::SW_MODE_WAITRESULT, $retry = 0, $ip = "", $port = "")
     {
         //get guid
-        $guid = $this->generateGuid();
+        $this->guid = $this->generateGuid();
 
         $Packet = array(
-            'guid' => $guid,
+            'guid' => $this->guid,
             'api' => array(
                 "one" => array(
                     'name' => $name,
@@ -202,15 +291,15 @@ class Client
 
         $sendData = Packet::packEncode($Packet);
 
-        $result = $this->doRequest($sendData, $Packet["type"], $guid, $ip, $port);
+        $result = $this->doRequest($sendData, $Packet["type"]);
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = $this->doRequest($sendData, $Packet["type"], $guid, $ip, $port);
+            $result = $this->doRequest($sendData, $Packet["type"]);
             $retry--;
         }
 
-        if ($guid != $result["guid"]) {
+        if ($this->guid != $result["guid"]) {
             return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
         }
 
@@ -234,10 +323,10 @@ class Client
     public function multiAPI($params, $mode = DoraConst::SW_MODE_WAITRESULT, $retry = 0, $ip = "", $port = "")
     {
         //get guid
-        $guid = $this->generateGuid();
+        $this->guid = $this->generateGuid();
 
         $Packet = array(
-            'guid' => $guid,
+            'guid' => $this->guid,
             'api' => $params,
         );
 
@@ -253,15 +342,15 @@ class Client
 
         $sendData = Packet::packEncode($Packet);
 
-        $result = $this->doRequest($sendData, $Packet["type"], $guid, $ip, $port);
+        $result = $this->doRequest($sendData, $Packet["type"]);
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = $this->doRequest($sendData, $Packet["type"], $guid, $ip, $port);
+            $result = $this->doRequest($sendData, $Packet["type"]);
             $retry--;
         }
 
-        if ($guid != $result["guid"]) {
+        if ($this->guid != $result["guid"]) {
             return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
         }
 
@@ -269,14 +358,14 @@ class Client
     }
 
 
-    private function doRequest($sendData, $type, $guid, $ip = "", $port = "")
+    private function doRequest($sendData, $type)
     {
         //get client obj
         try {
-            $client = $this->getClientObj($ip, $port);
+            $client = $this->getClientObj();
         } catch (\Exception $e) {
             $data = Packet::packFormat($e->getMessage(), $e->getCode());
-            $data["guid"] = $guid;
+            $data["guid"] = $this->guid;
             return $data;
         }
 
@@ -303,19 +392,19 @@ class Client
 
         //if the type is async result will record the guid and client handle
         if ($type == DoraConst::SW_MODE_ASYNCRESULT_MULTI || $type == DoraConst::SW_MODE_ASYNCRESULT_SINGLE) {
-            self::$asynclist[$guid] = $client;
+            self::$asynclist[$this->guid] = $client;
         }
 
         //recive the response
-        $data = $this->waitResult($client, $guid);
-        $data["guid"] = $guid;
+        $data = $this->waitResult($client);
+        $data["guid"] = $this->guid;
         return $data;
     }
 
     //for the loop find the right result
     //save the async result to the asyncresult static var
     //return the right guid request
-    private function waitResult($client, $guid)
+    private function waitResult($client)
     {
         while (1) {
             $result = $client->recv();
@@ -323,7 +412,7 @@ class Client
             if ($result !== false && $result != "") {
                 $data = Packet::packDecode($result);
                 //if the async result first deploy success will
-                if ($data["data"]["guid"] != $guid) {
+                if ($data["data"]["guid"] != $this->guid) {
 
                     // this data was not we want
                     //it's may the async result
@@ -350,7 +439,7 @@ class Client
             } else {
                 //time out
                 $packet = Packet::packFormat("the recive wrong or timeout", 100009);
-                $packet["guid"] = $guid;
+                $packet["guid"] = $this->guid;
                 return $packet;
             }
         }
@@ -419,6 +508,7 @@ class Client
         //to make sure the guid is unique for the async result
         while (1) {
             $guid = md5(microtime(true) . mt_rand(1, 1000000) . mt_rand(1, 1000000));
+            //prevent the guid on the async list
             if (!isset(self::$asynclist[$guid])) {
                 return $guid;
             }
