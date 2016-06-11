@@ -88,7 +88,7 @@ composer update
 > * 服务发现客户端，通过扫描Redis获取到所有可用后端服务列表，并生成配置到指定路径
 > * an discovery controller client that:scan all the redis and get the list of available service and general config file to special path
 
-###dora-rpc/groupclient.php
+###dora-rpc/groupclient.php (combined to client.php)
 > * 服务发现monitor进程产生的配置可以用这个客户端直接引用，请求时可以指定使用哪个组的服务
 > * an client for service discovery （monitor general the config from redis） that you can use the config directly 
 
