@@ -94,9 +94,9 @@ composer update
 
 ##使用方法(Example)
 ###任务下发模式介绍(task deploy mode)
-0 sync wait result 同步下发任务阻塞等待结果返回
-1 async no need result 下发异步任务，下发成功返回下发成功提示，不等待任务处理结果
-2 async get result by getAsyncData function 下发异步任务，下发成功返回下发成功提示，可以在后续调用getAsyncData 获取所有下发的异步结果
+> * 0 sync wait result 同步下发任务阻塞等待结果返回
+> * 1 async no need result 下发异步任务，下发成功返回下发成功提示，不等待任务处理结果
+> * 2 async get result by getAsyncData function 下发异步任务，下发成功返回下发成功提示，可以在后续调用getAsyncData 获取所有下发的异步结果
 
 ###客户端(Client)
 ```
