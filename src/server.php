@@ -9,6 +9,7 @@ namespace DoraRPC;
 abstract class Server
 {
 
+    private $tcpserver = null;
     private $server = null;
     private $taskInfo = array();
 
@@ -27,17 +28,16 @@ abstract class Server
 
     final public function __construct($ip = "0.0.0.0", $port = 9567, $groupConfig = array(), $reportConfig = array())
     {
-        $this->server = new \swoole_server($ip, $port);
-        $config = array(
-            'open_length_check' => 1,
+        $this->server = new \swoole_http_server($ip, 9566, \SWOOLE_BASE);
+        $this->tcpserver = $this->server->addListener($ip, $port, \SWOOLE_TCP);
+        $httpconfig = array(
             'dispatch_mode' => 3,
-            'package_length_type' => 'N',
-            'package_length_offset' => 0,
-            'package_body_offset' => 4,
+
             'package_max_length' => 1024 * 1024 * 2,
             'buffer_output_size' => 1024 * 1024 * 3,
             'pipe_buffer_size' => 1024 * 1024 * 32,
             'open_tcp_nodelay' => 1,
+
             'heartbeat_check_interval' => 5,
             'heartbeat_idle_time' => 10,
             'open_cpu_affinity' => 1,
@@ -56,18 +56,40 @@ abstract class Server
             'daemonize' => 1,
         );
 
+        $tcpconfig = array(
+            'open_length_check' => 1,
+            'package_length_type' => 'N',
+            'package_length_offset' => 0,
+            'package_body_offset' => 4,
+
+            'package_max_length' => 1024 * 1024 * 2,
+            'buffer_output_size' => 1024 * 1024 * 3,
+            'pipe_buffer_size' => 1024 * 1024 * 32,
+
+            'open_tcp_nodelay' => 1,
+
+            'backlog' => 2000,
+        );
+
         //merge config
         if (!empty($this->externalConfig)) {
-            $config = array_merge($config, $this->externalConfig);
+            $httpconfig = array_merge($httpconfig, $this->externalConfig);
+            $tcpconfig = array_merge($tcpconfig, $this->externalConfig);
         }
 
-        $this->server->set($config);
+        //init tcp server
+        $this->tcpserver->set($tcpconfig);
+        $this->tcpserver->on('receive', array($this, 'onReceive'));
+
+        //init http server
+        $this->server->set($httpconfig);
+        $this->server->on('request', array($this, 'onRequest'));
 
         //$this->server->on('connect', array($this, 'onConnect'));
         $this->server->on('workerstart', array($this, 'onWorkerStart'));
-        $this->server->on('receive', array($this, 'onReceive'));
         $this->server->on('workererror', array($this, 'onWorkerError'));
         $this->server->on('task', array($this, 'onTask'));
+
         //$this->server->on('close', array($this, 'onClose'));
         $this->server->on('finish', array($this, 'onFinish'));
 
@@ -96,6 +118,8 @@ abstract class Server
     //server report
     final public function monitorReport(\swoole_process $process)
     {
+        swoole_set_process_name("phpprocess|monitor");
+
         static $_redisObj;
 
         while (true) {
@@ -120,7 +144,7 @@ abstract class Server
                         //set time out
                         $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $this->serverPort . ".time", time());
 
-                        echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
+                        //echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
 
                     } catch (\Exception $ex) {
                         $_redisObj[$key] = null;
@@ -132,6 +156,77 @@ abstract class Server
             sleep(10);
             //sleep 10 sec and report again
         }
+    }
+
+    final public function onRequest(\swoole_http_request $request, \swoole_http_response $response)
+    {
+        //return the json
+        $response->header("Content-Type", "application/json; charset=utf-8");
+        //forever http 200 ,when the error json code decide
+        $response->status(200);
+
+        //chenck post error
+        if (!isset($request->post["params"])) {
+            $response->end(json_encode(Packet::packFormat("Parameter was not set or wrong", 100003)));
+            return;
+        }
+        //get the parameter
+        $params = $request->post;
+        $params = json_decode($params["params"], true);
+
+        //check the parameter need field
+        if (!isset($params["guid"]) || !isset($params["api"]) || count($params["api"]) == 0) {
+            $response->end(json_encode(Packet::packFormat("Parameter was not set or wrong", 100003)));
+            return;
+        }
+
+        $task = array(
+            "guid" => $params["guid"],
+            "fd" => $request->fd,
+            "protocol" => "http",
+        );
+
+        $url = trim($request->server["request_uri"], "\r\n/ ");
+
+        switch ($url) {
+            case "api/multisync":
+                $task["type"] = DoraConst::SW_MODE_WAITRESULT_MULTI;
+                foreach ($params["api"] as $k => $v) {
+                    $task["api"] = $params["api"][$k];
+                    $taskid = $this->server->task($task, -1, function ($serv, $task_id, $data) use ($response) {
+                        $this->onHttpFinished($serv, $task_id, $data, $response);
+                    });
+                    $this->taskInfo[$task["fd"]][$task["guid"]]["taskkey"][$taskid] = $k;
+                }
+                break;
+            case "api/multinoresult":
+                $task["type"] = DoraConst::SW_MODE_NORESULT_MULTI;
+
+                foreach ($params["api"] as $k => $v) {
+                    $task["api"] = $params["api"][$k];
+                    $this->server->task($task);
+                }
+                $pack = Packet::packFormat("transfer success.已经成功投递", 100001);
+                $pack["guid"] = $task["guid"];
+                $response->end(json_encode($pack));
+
+                break;
+            case "server/cmd":
+                $task["type"] = DoraConst::SW_CONTROL_CMD;
+
+                if ($params["api"]["cmd"]["name"] == "getStat") {
+                    $pack = Packet::packFormat("OK", 0, array("server" => $this->server->stats()));
+                    $pack["guid"] = $task["guid"];
+                    $response->end(json_encode($pack));
+                    return;
+                }
+                break;
+            default:
+                $response->end(json_encode(Packet::packFormat("unknow task type.未知类型任务", 100002)));
+                unset($this->taskInfo[$task["fd"]]);
+                return;
+        }
+
     }
 
     final public function onConnect($serv, $fd)
@@ -182,13 +277,12 @@ abstract class Server
         }
         $guid = $requestInfo["guid"];
 
-        //$this->taskInfo[$fd][$guid] = $req;
-
+        //prepare the task parameter
         $task = array(
             "type" => $requestInfo["type"],
             "guid" => $requestInfo["guid"],
             "fd" => $fd,
-            "type" => $requestInfo["type"]
+            "protocol" => "tcp",
         );
 
         switch ($requestInfo["type"]) {
@@ -288,7 +382,7 @@ abstract class Server
                 $pack = Packet::packEncode($pack);
 
                 $serv->send($fd, $pack);
-                unset($this->taskInfo[$fd]);
+                //unset($this->taskInfo[$fd]);
 
                 return true;
         }
@@ -378,7 +472,7 @@ abstract class Server
         //save the result
         $this->taskInfo[$fd][$guid]["result"][$key] = $data["result"];
 
-        //remove the used guid
+        //remove the used taskid
         unset($this->taskInfo[$fd][$guid]["taskkey"][$task_id]);
 
         switch ($data["type"]) {
@@ -386,7 +480,7 @@ abstract class Server
             case DoraConst::SW_MODE_WAITRESULT_SINGLE:
                 $Packet = Packet::packFormat("OK", 0, $data["result"]);
                 $Packet["guid"] = $guid;
-                $Packet = Packet::packEncode($Packet);
+                $Packet = Packet::packEncode($Packet, $data["protocol"]);
 
                 $serv->send($fd, $Packet);
                 unset($this->taskInfo[$fd][$guid]);
@@ -398,8 +492,9 @@ abstract class Server
                 if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
                     $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
                     $Packet["guid"] = $guid;
-                    $Packet = Packet::packEncode($Packet);
+                    $Packet = Packet::packEncode($Packet, $data["protocol"]);
                     $serv->send($fd, $Packet);
+                    //$serv->close($fd);
                     unset($this->taskInfo[$fd][$guid]);
 
                     return true;
@@ -415,7 +510,7 @@ abstract class Server
                 $Packet["guid"] = $guid;
                 //flag this is result
                 $Packet["isresult"] = 1;
-                $Packet = Packet::packEncode($Packet);
+                $Packet = Packet::packEncode($Packet, $data["protocol"]);
 
                 //sys_get_temp_dir
                 $serv->send($fd, $Packet);
@@ -428,7 +523,7 @@ abstract class Server
                     $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
                     $Packet["guid"] = $guid;
                     $Packet["isresult"] = 1;
-                    $Packet = Packet::packEncode($Packet);
+                    $Packet = Packet::packEncode($Packet, $data["protocol"]);
                     $serv->send($fd, $Packet);
 
                     unset($this->taskInfo[$fd][$guid]);
@@ -446,6 +541,48 @@ abstract class Server
                 break;
         }
 
+    }
+
+    final public function onHttpFinished($serv, $task_id, $data, $response)
+    {
+        $fd = $data["fd"];
+        $guid = $data["guid"];
+
+        //if the guid not exists .it's mean the api no need return result
+        if (!isset($this->taskInfo[$fd][$guid])) {
+            return true;
+        }
+
+        //get the api key
+        $key = $this->taskInfo[$fd][$guid]["taskkey"][$task_id];
+
+        //save the result
+        $this->taskInfo[$fd][$guid]["result"][$key] = $data["result"];
+
+        //remove the used taskid
+        unset($this->taskInfo[$fd][$guid]["taskkey"][$task_id]);
+
+        switch ($data["type"]) {
+            case DoraConst::SW_MODE_WAITRESULT_MULTI:
+                if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
+                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
+                    $Packet["guid"] = $guid;
+                    $Packet = Packet::packEncode($Packet, $data["protocol"]);
+                    unset($this->taskInfo[$fd][$guid]);
+                    $response->end($Packet);
+
+                    return true;
+                } else {
+                    //not finished
+                    //waiting other result
+                    return true;
+                }
+                break;
+            default:
+
+                return true;
+                break;
+        }
     }
 
     final public function onClose(\swoole_server $server, $fd, $from_id)

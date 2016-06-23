@@ -1,3 +1,4 @@
+ulimit -n 65535
 sysctl net.unix.max_dgram_qlen=100
 sysctl net.core.wmem_default=8388608
 sysctl net.core.rmem_default=8388608

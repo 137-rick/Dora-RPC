@@ -15,24 +15,32 @@ class Packet
         return $pack;
     }
 
-    public static function packEncode($data)
+    public static function packEncode($data, $type = "tcp")
     {
 
-        $sendStr = serialize($data);
+        if ($type == "tcp") {
+            $sendStr = serialize($data);
 
-        //if compress the packet
-        if (DoraConst::SW_DATACOMPRESS_FLAG == true) {
-            $sendStr = gzencode($sendStr, 4);
-        }
+            //if compress the packet
+            if (DoraConst::SW_DATACOMPRESS_FLAG == true) {
+                $sendStr = gzencode($sendStr, 4);
+            }
 
-        if (DoraConst::SW_DATASIGEN_FLAG == true) {
-            $signedcode = pack('N', crc32($sendStr . DoraConst::SW_DATASIGEN_SALT));
-            $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
+            if (DoraConst::SW_DATASIGEN_FLAG == true) {
+                $signedcode = pack('N', crc32($sendStr . DoraConst::SW_DATASIGEN_SALT));
+                $sendStr = pack('N', strlen($sendStr) + 4) . $signedcode . $sendStr;
+            } else {
+                $sendStr = pack('N', strlen($sendStr)) . $sendStr;
+            }
+
+            return $sendStr;
+        } else if ($type == "http") {
+            $sendStr = json_encode($data);
+            return $sendStr;
         } else {
-            $sendStr = pack('N', strlen($sendStr)) . $sendStr;
+            return self::packFormat("packet type wrong", 100006);
         }
 
-        return $sendStr;
     }
 
     public static function packDecode($str)
@@ -48,7 +56,7 @@ class Packet
 
             //check signed
             if (pack("N", crc32($result . DoraConst::SW_DATASIGEN_SALT)) != $signedcode) {
-                return self::packFormat("Signed check error!", 100010);
+                return self::packFormat("Signed check error!", 100005);
             }
 
             $len = $len - 4;

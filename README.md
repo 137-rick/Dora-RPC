@@ -5,12 +5,14 @@
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
 > * 目前只提供PHP语言代码
 > * 后续有什么bug或者问题请提交Issue
+> * 新增加http协议接口，支持Keepalive，方便其他语言接入
 
 ----------
 For complex projects separation, the project can be better maintained by the API project management.
 > * Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC
 > * Now support an simple PHP version 
 > * If you find something wrong,please submit an issue
+> * add the http protocol and KeepAlive for the other program language
 
 ----------
 #设计思路(Design)
@@ -98,7 +100,7 @@ composer update
 > * 1 async no need result 下发异步任务，下发成功返回下发成功提示，不等待任务处理结果
 > * 2 async get result by getAsyncData function 下发异步任务，下发成功返回下发成功提示，可以在后续调用getAsyncData 获取所有下发的异步结果
 
-###客户端(Client)
+###TCP客户端(TCP Client)
 ```
 include "../src/doraconst.php";
 include "../src/packet.php";
@@ -183,7 +185,78 @@ echo "max:" . $maxrequest . PHP_EOL;
 
 ```
 
+###HTTP客户端(Http Client)
 ----------
+http protocol for the other language use performance is common.suggest used tcp client
+```
+
+for ($i = 0; $i < 10000; $i++) {
+    $time = microtime(true);
+
+    //mutil call sync wait result
+    $data = array(
+        "guid" => md5(mt_rand(1000000, 9999999) . mt_rand(1000000, 9999999) . microtime(true)),
+
+        "api" => array(
+            "oak" => array("name" => "/module_d/oakdf", "param" => array("dsaf" => "32111321")),
+            "cd" => array("name" => "/module_e/oakdfff", "param" => array("codo" => "f11ds")),
+        )
+    ,
+    );
+
+    $data_string = "params=" . urlencode(json_encode($data));
+
+    $ch = curl_init('http://127.0.0.1:9566/api/multisync');
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Connection: Keep-Alive',
+            'Keep-Alive: 300',
+        )
+    );
+
+    $result = curl_exec($ch);
+    var_dump(json_decode($result, true));
+
+
+    //multi call no wait result
+    $data = array(
+        "guid" => md5(mt_rand(1000000, 9999999) . mt_rand(1000000, 9999999) . microtime(true)),
+
+        "api" => array(
+            "oak" => array("name" => "/module_d/oakdf", "param" => array("dsaf" => "32111321")),
+            "cd" => array("name" => "/module_e/oakdfff", "param" => array("codo" => "f11ds")),
+        )
+    ,
+    );
+
+    $data_string = "params=" . urlencode(json_encode($data));
+
+    $ch = curl_init('http://127.0.0.1:9566/api/multinoresult');
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Connection: Keep-Alive',
+            'Keep-Alive: 300',
+        )
+    );
+
+    $result = curl_exec($ch);
+    var_dump(json_decode($result, true));
+
+
+    $time = bcsub(microtime(true), $time, 5);
+    if ($time > $maxrequest) {
+        $maxrequest = $time;
+    }
+    echo $i . " cost:" . $time . PHP_EOL;
+    //var_dump($ret);
+}
+echo "max:" . $maxrequest . PHP_EOL;
+
+```
 
 ###服务端(Server)
 ```
@@ -267,6 +340,8 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100001 async task success
 > * 100002 unknow task type
 > * 100003 you must fill the api parameter on you request
+> * 100005 Signed check error
+> * 100006 Pack decode type wrong
 > * 100007 socket error the recive packet length is wrong
 > * 100008 the return guid wrong may be the socket trasfer wrong data
 > * 100009 the recive wrong or timeout
