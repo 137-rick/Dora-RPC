@@ -79,19 +79,22 @@ abstract class Server
 
         //init tcp server
         $this->tcpserver->set($tcpconfig);
-        $this->tcpserver->on('receive', array($this, 'onReceive'));
+        $this->tcpserver->on('Receive', array($this, 'onReceive'));
 
         //init http server
         $this->server->set($httpconfig);
-        $this->server->on('request', array($this, 'onRequest'));
+        $this->server->on('Start',array($this,'onStart'));
+        $this->server->on('ManagerStart',array($this,'onManagerStart'));
+
+        $this->server->on('Request', array($this, 'onRequest'));
 
         //$this->server->on('connect', array($this, 'onConnect'));
-        $this->server->on('workerstart', array($this, 'onWorkerStart'));
-        $this->server->on('workererror', array($this, 'onWorkerError'));
-        $this->server->on('task', array($this, 'onTask'));
+        $this->server->on('WorkerStart', array($this, 'onWorkerStart'));
+        $this->server->on('WorkerError', array($this, 'onWorkerError'));
+        $this->server->on('Task', array($this, 'onTask'));
 
         //$this->server->on('close', array($this, 'onClose'));
-        $this->server->on('finish', array($this, 'onFinish'));
+        $this->server->on('Finish', array($this, 'onFinish'));
 
         //invoke the start
         $this->initServer($this->server);
@@ -118,7 +121,7 @@ abstract class Server
     //server report
     final public function monitorReport(\swoole_process $process)
     {
-        swoole_set_process_name("phpprocess|monitor");
+        swoole_set_process_name("doraProcess|Monitor");
 
         static $_redisObj;
 
@@ -229,6 +232,20 @@ abstract class Server
 
     }
 
+    final public function onStart(\swoole_server $serv){
+        echo "MasterPid={$serv->master_pid}\n";
+        echo "Server: start.Swoole version is [".SWOOLE_VERSION."]\n";
+        swoole_set_process_name("dora|Master");
+
+        file_put_contents("./dorarpc.pid",$serv->master_pid);
+    }
+
+    final public function onManagerStart(\swoole_server $serv){
+        echo "Manager_pid={$serv->manager_pid}\n";
+        file_put_contents("./dorarpcmanager.pid",$serv->manager_pid);
+
+    }
+
     final public function onConnect($serv, $fd)
     {
         //$this->taskInfo[$fd] = array();
@@ -239,10 +256,10 @@ abstract class Server
         $istask = $server->taskworker;
         if (!$istask) {
             //worker
-            swoole_set_process_name("phpworker|{$worker_id}");
+            swoole_set_process_name("doraWorker|{$worker_id}");
         } else {
             //task
-            swoole_set_process_name("phptask|{$worker_id}");
+            swoole_set_process_name("doraTask|{$worker_id}");
             $this->initTask($server, $worker_id);
         }
 
@@ -392,7 +409,7 @@ abstract class Server
 
     final public function onTask($serv, $task_id, $from_id, $data)
     {
-//        swoole_set_process_name("phptask|{$task_id}_{$from_id}|" . $data["api"]["name"] . "");
+//        swoole_set_process_name("doraTask|{$task_id}_{$from_id}|" . $data["api"]["name"] . "");
         try {
             $data["result"] = Packet::packFormat("OK", 0, $this->doWork($data));
         } catch (\Exception $e) {
