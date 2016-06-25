@@ -84,7 +84,6 @@ abstract class Server
         //init http server
         $this->server->set($httpconfig);
         $this->server->on('Start',array($this,'onStart'));
-        $this->server->on('ManagerStart',array($this,'onManagerStart'));
 
         $this->server->on('Request', array($this, 'onRequest'));
 
@@ -223,6 +222,13 @@ abstract class Server
                     $response->end(json_encode($pack));
                     return;
                 }
+                if ($params["api"]["cmd"]["name"] == "reloadTask") {
+                    $pack = Packet::packFormat("OK", 0, array());
+                    $this->server->reload(true);
+                    $pack["guid"] = $task["guid"];
+                    $response->end(json_encode($pack));
+                    return;
+                }
                 break;
             default:
                 $response->end(json_encode(Packet::packFormat("unknow task type.未知类型任务", 100002)));
@@ -238,12 +244,6 @@ abstract class Server
         swoole_set_process_name("dora|Master");
 
         file_put_contents("./dorarpc.pid",$serv->master_pid);
-    }
-
-    final public function onManagerStart(\swoole_server $serv){
-        echo "Manager_pid={$serv->manager_pid}\n";
-        file_put_contents("./dorarpcmanager.pid",$serv->manager_pid);
-
     }
 
     final public function onConnect($serv, $fd)
@@ -356,6 +356,15 @@ abstract class Server
                     $pack["guid"] = $task["guid"];
                     $pack = Packet::packEncode($pack);
                     $serv->send($fd, $pack);
+                    return true;
+                }
+
+                if ($requestInfo["api"]["cmd"]["name"] == "reloadTask") {
+                    $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
+                    $pack["guid"] = $task["guid"];
+                    $pack = Packet::packEncode($pack);
+                    $serv->send($fd, $pack);
+                    $serv->reload(true);
                     return true;
                 }
 

@@ -242,6 +242,43 @@ class Client
         return $result["data"];
     }
 
+    public function reloadServerTask($ip = "", $port = "")
+    {
+        $beformode = $this->getConnectMode();
+
+        if ($ip != "" && $port != "") {
+            $mode = array("type" => 2, "ip" => $ip, "port" => $port);
+            $this->changeMode($mode);
+        }
+
+        $this->guid = $this->generateGuid();
+
+        $Packet = array(
+            'guid' => $this->guid,
+            'api' => array(
+                "cmd" => array(
+                    'name' => "reloadTask",
+                    'param' => array(),
+                ),
+            ),
+            'type' => DoraConst::SW_CONTROL_CMD,
+        );
+
+        $sendData = Packet::packEncode($Packet);
+        $result = $this->doRequest($sendData, DoraConst::SW_MODE_WAITRESULT_SINGLE);
+
+        if ($this->guid != $result["guid"]) {
+            return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
+        }
+
+        //revert befor connect mode
+        if ($ip != "" && $port != "") {
+            //revert befor mode
+            $this->changeMode($beformode);
+        }
+        return $result["data"];
+    }
+
     /*
      * mode 参数更改说明，以前版本只是sync参数不是mode
      * sync :
