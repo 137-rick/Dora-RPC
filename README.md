@@ -65,11 +65,11 @@ composer update
 ----------
 
 ##文件功能简介(File)
-###dora-rpc/client.php
+###dora-rpc/src/Client.php
 > * 使用最简单的方式实现的客户端，通过这个框架可以轻松实现PHP的伪多线程，通过分布式加快接口响应速度及高可用
 > * an simple client,it's easy adn simply to implement the multi fake thread,you can speed up you API by this distribute RPC
 
-###dora-rpc/server.php
+###dora-rpc/src/Server.php
 > * 使用最简单的方式实现的服务端
 > * 目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 > * 做这个只是为了减少大家启用RPC的开发时间
@@ -86,11 +86,11 @@ composer update
 
 ----------
 
-###dora-rpc/monitor.php
+###dora-rpc/src/Monitor.php
 > * 服务发现客户端，通过扫描Redis获取到所有可用后端服务列表，并生成配置到指定路径
 > * an discovery controller client that:scan all the redis and get the list of available service and general config file to special path
 
-###dora-rpc/groupclient.php (combined to client.php)
+###dora-rpc/src/groupclient.php (combined to client.php)
 > * 服务发现monitor进程产生的配置可以用这个客户端直接引用，请求时可以指定使用哪个组的服务
 > * an client for service discovery （monitor general the config from redis） that you can use the config directly 
 
@@ -102,9 +102,9 @@ composer update
 
 ###TCP客户端(TCP Client)
 ```
-include "../src/doraconst.php";
-include "../src/packet.php";
-include "../src/client.php";
+include "../src/Doraconst.php";
+include "../src/Packet.php";
+include "../src/Client.php";
 
 /*
 $config = array(
@@ -260,7 +260,7 @@ echo "max:" . $maxrequest . PHP_EOL;
 
 ###服务端(Server)
 ```
-include "src/server.php";
+include "src/Server.php";
 
 class Server extends DoraRPCServer {
 
@@ -302,9 +302,9 @@ $res = new Server();
 ----------
 ###客户端监控器(Client Local Monitor)
 ```
-include "src/doraconst.php";
-include "src/packet.php";
-include "src/monitor.php";
+include "src/Doraconst.php";
+include "src/Packet.php";
+include "src/Monitor.php";
 
 
 //redis for service discovery register
