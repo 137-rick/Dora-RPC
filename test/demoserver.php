@@ -29,6 +29,10 @@ class Server extends \DoraRPC\Server
         'task_tmpdir' => '/tmp/swtasktmp/',
     );
 
+    protected $externalHttpConfig = array(
+        'daemonize' => false,
+    );
+
     function initServer($server)
     {
         //the callback of the server init 附加服务初始化

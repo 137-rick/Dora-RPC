@@ -23,6 +23,7 @@ abstract class Server
     //for extends class overwrite default config
     //用于继承类覆盖默认配置
     protected $externalConfig = array();
+    protected $externalHttpConfig = array();
 
     abstract public function initServer($server);
 
@@ -49,7 +50,7 @@ abstract class Server
             'max_request' => 0, //必须设置为0否则并发任务容易丢,don't change this number
             'task_max_request' => 4000,
 
-            'backlog' => 2000,
+            'backlog' => 3000,
             'log_file' => '/tmp/sw_server.log',
             'task_tmpdir' => '/tmp/swtasktmp/',
 
@@ -68,12 +69,12 @@ abstract class Server
 
             'open_tcp_nodelay' => 1,
 
-            'backlog' => 2000,
+            'backlog' => 3000,
         );
 
         //merge config
         if (!empty($this->externalConfig)) {
-            $httpconfig = array_merge($httpconfig, $this->externalConfig);
+            $httpconfig = array_merge($httpconfig, $this->externalHttpConfig);
             $tcpconfig = array_merge($tcpconfig, $this->externalConfig);
         }
 
@@ -84,15 +85,10 @@ abstract class Server
         //init http server
         $this->server->set($httpconfig);
         $this->server->on('Start', array($this, 'onStart'));
-
         $this->server->on('Request', array($this, 'onRequest'));
-
-        //$this->server->on('connect', array($this, 'onConnect'));
         $this->server->on('WorkerStart', array($this, 'onWorkerStart'));
         $this->server->on('WorkerError', array($this, 'onWorkerError'));
         $this->server->on('Task', array($this, 'onTask'));
-
-        //$this->server->on('close', array($this, 'onClose'));
         $this->server->on('Finish', array($this, 'onFinish'));
 
         //invoke the start
@@ -117,7 +113,7 @@ abstract class Server
     }
 
     //////////////////////////////server monitor start/////////////////////////////
-    //server report
+    //server discovery report
     final public function monitorReport(\swoole_process $process)
     {
         swoole_set_process_name("doraProcess|Monitor");
@@ -160,6 +156,7 @@ abstract class Server
         }
     }
 
+    //http request process
     final public function onRequest(\swoole_http_request $request, \swoole_http_response $response)
     {
         //return the json
@@ -182,6 +179,7 @@ abstract class Server
             return;
         }
 
+        //task base info
         $task = array(
             "guid" => $params["guid"],
             "fd" => $request->fd,
@@ -238,6 +236,7 @@ abstract class Server
 
     }
 
+    //application server first start
     final public function onStart(\swoole_server $serv)
     {
         echo "MasterPid={$serv->master_pid}\n";
@@ -247,11 +246,7 @@ abstract class Server
         file_put_contents("./dorarpc.pid", $serv->master_pid);
     }
 
-    final public function onConnect($serv, $fd)
-    {
-        //$this->taskInfo[$fd] = array();
-    }
-
+    //worker and task init
     final public function onWorkerStart($server, $worker_id)
     {
         $istask = $server->taskworker;
@@ -268,9 +263,9 @@ abstract class Server
 
     abstract public function initTask($server, $worker_id);
 
+    //tcp request process
     final public function onReceive(\swoole_server $serv, $fd, $from_id, $data)
     {
-        //todo:have taskid+fromid
         $requestInfo = Packet::packDecode($data);
 
         #decode error
@@ -284,7 +279,7 @@ abstract class Server
             $requestInfo = $requestInfo["data"];
         }
 
-        #api not set
+        #api was not set will fail
         if (!is_array($requestInfo["api"]) && count($requestInfo["api"])) {
             $pack = Packet::packFormat("param api is empty", 100003);
             $pack["guid"] = $requestInfo["guid"];
@@ -303,6 +298,7 @@ abstract class Server
             "protocol" => "tcp",
         );
 
+        //different task type process
         switch ($requestInfo["type"]) {
 
             case DoraConst::SW_MODE_WAITRESULT_SINGLE:
@@ -444,7 +440,7 @@ abstract class Server
 
     final public function onWorkerError(\swoole_server $serv, $worker_id, $worker_pid, $exit_code)
     {
-        //using the swoole error log output the error
+        //using the swoole error log output the error this will output to the swtmp log
         var_dump("workererror", array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
     }
 
@@ -473,6 +469,7 @@ abstract class Server
         return $this->serverIP;
     }
 
+    //task process finished
     final public function onFinish($serv, $task_id, $data)
     {
         /*
@@ -570,6 +567,7 @@ abstract class Server
 
     }
 
+    //http task finished process
     final public function onHttpFinished($serv, $task_id, $data, $response)
     {
         $fd = $data["fd"];
@@ -591,6 +589,7 @@ abstract class Server
 
         switch ($data["type"]) {
             case DoraConst::SW_MODE_WAITRESULT_MULTI:
+                //all task finished
                 if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
                     $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
                     $Packet["guid"] = $guid;
@@ -611,12 +610,6 @@ abstract class Server
                 break;
         }
     }
-
-    final public function onClose(\swoole_server $server, $fd, $from_id)
-    {
-        //unset($this->taskInfo[$fd]);
-    }
-
 
     final public function __destruct()
     {
