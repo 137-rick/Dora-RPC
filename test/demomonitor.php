@@ -1,7 +1,7 @@
 <?php
-include "../src/doraconst.php";
-include "../src/packet.php";
-include "../src/monitor.php";
+include "../src/Doraconst.php";
+include "../src/Packet.php";
+include "../src/Monitor.php";
 
 $config = array(
     //redis for service discovery register
