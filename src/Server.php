@@ -26,9 +26,9 @@ abstract class Server
 
     abstract public function initServer($server);
 
-    final public function __construct($ip = "0.0.0.0", $port = 9567, $groupConfig = array(), $reportConfig = array())
+    final public function __construct($ip = "0.0.0.0", $port = 9567, $httpport = 9566, $groupConfig = array(), $reportConfig = array())
     {
-        $this->server = new \swoole_http_server($ip, 9566, \SWOOLE_BASE);
+        $this->server = new \swoole_http_server($ip, $httpport, \SWOOLE_BASE);
         $this->tcpserver = $this->server->addListener($ip, $port, \SWOOLE_TCP);
         $httpconfig = array(
             'dispatch_mode' => 3,
@@ -83,7 +83,7 @@ abstract class Server
 
         //init http server
         $this->server->set($httpconfig);
-        $this->server->on('Start',array($this,'onStart'));
+        $this->server->on('Start', array($this, 'onStart'));
 
         $this->server->on('Request', array($this, 'onRequest'));
 
@@ -238,12 +238,13 @@ abstract class Server
 
     }
 
-    final public function onStart(\swoole_server $serv){
+    final public function onStart(\swoole_server $serv)
+    {
         echo "MasterPid={$serv->master_pid}\n";
-        echo "Server: start.Swoole version is [".SWOOLE_VERSION."]\n";
+        echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
         swoole_set_process_name("dora|Master");
 
-        file_put_contents("./dorarpc.pid",$serv->master_pid);
+        file_put_contents("./dorarpc.pid", $serv->master_pid);
     }
 
     final public function onConnect($serv, $fd)
