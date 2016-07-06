@@ -65,8 +65,9 @@ class Client
      */
     public function changeMode($param)
     {
-        if ($param["type"] == 1) {
-            if ($param["type"] == "" || $param["group"] == "") {
+        switch ($param["type"]) {
+        case 1:
+            if ($param["group"] == "") {
                 throw new \Exception("change mode parameter is wrong", -1);
             }
             $this->connectMode = 1;
@@ -74,9 +75,9 @@ class Client
             $this->connectIp = "";
             $this->connectPort = "";
             $this->currentClientKey = "";
-        } else if ($param["type"] == 2) {
-
-            if ($param["type"] == "" || $param["ip"] == "" || $param["port"] == "") {
+            break;
+        case 2:
+            if ($param["ip"] == "" || $param["port"] == "") {
                 throw new \Exception("change mode parameter is wrong", -1);
             }
             $this->connectMode = 2;
@@ -84,9 +85,10 @@ class Client
             $this->connectIp = $param["ip"];
             $this->connectPort = $param["port"];
             $this->currentClientKey = "";
-
-        } else {
+            break;
+        default:
             throw new \Exception("change mode parameter is wrong", -1);
+            break;
         }
     }
 
@@ -97,12 +99,16 @@ class Client
      */
     public function getConnectMode()
     {
-        if ($this->connectMode == 1) {
+        switch($this->connectMode) {
+        case 1:
             return array("type" => 1, "group" => $this->connectGroup, "ip" => $this->connectIp, "port" => $this->connectPort);
-        } else if ($this->connectMode == 2) {
+            break;
+        case 2:
             return array("type" => 2, "group" => "", "ip" => $this->connectIp, "port" => $this->connectPort);
-        } else {
+            break;
+        default:
             throw new \Exception("current connect mode is unknow", -1);
+            break;
         }
     }
 
@@ -144,22 +150,26 @@ class Client
         $key = "";
 
         //if not spc will random
-        if ($this->connectMode == 1) {
+        switch ($this->connectMode) {
+        case 1:
             $key = $this->getConfigObjKey();
             $clientKey = $this->serverConfig[$this->connectGroup][$key]["ip"] . "_" . $this->serverConfig[$this->connectGroup][$key]["port"];
             //set the current client key
             $this->currentClientKey = $clientKey;
             $connectHost = $this->serverConfig[$this->connectGroup][$key]["ip"];
             $connectPort = $this->serverConfig[$this->connectGroup][$key]["port"];
-        } else if ($this->connectMode == 2) {
+            break;
+        case 2:
             //using spec
             $clientKey = trim($this->connectIp) . "_" . trim($this->connectPort);
             //set the current client key
             $this->currentClientKey = $clientKey;
             $connectHost = $this->connectIp;
             $connectPort = $this->connectPort;
-        } else {
+            break;
+        default:
             throw new \Exception("current connect mode is unknow", -1);
+            break;
         }
 
         if (!isset(self::$client[$clientKey])) {
@@ -216,7 +226,7 @@ class Client
 
         $this->guid = $this->generateGuid();
 
-        $Packet = array(
+        $packet = array(
             'guid' => $this->guid,
             'api' => array(
                 "cmd" => array(
@@ -227,7 +237,7 @@ class Client
             'type' => DoraConst::SW_CONTROL_CMD,
         );
 
-        $sendData = Packet::packEncode($Packet);
+        $sendData = Packet::packEncode($packet);
         $result = $this->doRequest($sendData, DoraConst::SW_MODE_WAITRESULT_SINGLE);
 
         if ($this->guid != $result["guid"]) {
@@ -253,7 +263,7 @@ class Client
 
         $this->guid = $this->generateGuid();
 
-        $Packet = array(
+        $packet = array(
             'guid' => $this->guid,
             'api' => array(
                 "cmd" => array(
@@ -264,7 +274,7 @@ class Client
             'type' => DoraConst::SW_CONTROL_CMD,
         );
 
-        $sendData = Packet::packEncode($Packet);
+        $sendData = Packet::packEncode($packet);
         $result = $this->doRequest($sendData, DoraConst::SW_MODE_WAITRESULT_SINGLE);
 
         if ($this->guid != $result["guid"]) {
@@ -306,7 +316,7 @@ class Client
         //get guid
         $this->guid = $this->generateGuid();
 
-        $Packet = array(
+        $packet = array(
             'guid' => $this->guid,
             'api' => array(
                 "one" => array(
@@ -316,23 +326,28 @@ class Client
             ),
         );
 
-        if ($mode == DoraConst::SW_MODE_WAITRESULT) {
-            $Packet["type"] = DoraConst::SW_MODE_WAITRESULT_SINGLE;
-        } elseif ($mode == DoraConst::SW_MODE_NORESULT) {
-            $Packet["type"] = DoraConst::SW_MODE_NORESULT_SINGLE;
-        } elseif ($mode == DoraConst::SW_MODE_ASYNCRESULT) {
-            $Packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_SINGLE;
-        } else {
+        switch ($mode) {
+        case DoraConst::SW_MODE_WAITRESULT:
+            $packet["type"] = DoraConst::SW_MODE_WAITRESULT_SINGLE;
+            break;
+        case DoraConst::SW_MODE_NORESULT:
+            $packet["type"] = DoraConst::SW_MODE_NORESULT_SINGLE;
+            break;
+        case DoraConst::SW_MODE_ASYNCRESULT:
+            $packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_SINGLE;
+            break;
+        default:
             throw new \Exception("unknow mode have been set", 100099);
+            break;
         }
 
-        $sendData = Packet::packEncode($Packet);
+        $sendData = Packet::packEncode($packet);
 
-        $result = $this->doRequest($sendData, $Packet["type"]);
+        $result = $this->doRequest($sendData, $packet["type"]);
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = $this->doRequest($sendData, $Packet["type"]);
+            $result = $this->doRequest($sendData, $packet["type"]);
             $retry--;
         }
 
@@ -362,28 +377,33 @@ class Client
         //get guid
         $this->guid = $this->generateGuid();
 
-        $Packet = array(
+        $packet = array(
             'guid' => $this->guid,
             'api' => $params,
         );
 
-        if ($mode == DoraConst::SW_MODE_WAITRESULT) {
-            $Packet["type"] = DoraConst::SW_MODE_WAITRESULT_MULTI;
-        } else if ($mode == DoraConst::SW_MODE_NORESULT) {
-            $Packet["type"] = DoraConst::SW_MODE_NORESULT_MULTI;
-        } else if ($mode == DoraConst::SW_MODE_ASYNCRESULT) {
-            $Packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_MULTI;
-        } else {
+        switch ($mode) {
+        case DoraConst::SW_MODE_WAITRESULT:
+            $packet["type"] = DoraConst::SW_MODE_WAITRESULT_MULTI;
+            break;
+        case DoraConst::SW_MODE_NORESULT:
+            $packet["type"] = DoraConst::SW_MODE_NORESULT_MULTI;
+            break;
+        case DoraConst::SW_MODE_ASYNCRESULT:
+            $packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_MULTI;
+            break;
+        default:
             throw new \Exception("unknow mode have been set", 100099);
+            break;
         }
 
-        $sendData = Packet::packEncode($Packet);
+        $sendData = Packet::packEncode($packet);
 
-        $result = $this->doRequest($sendData, $Packet["type"]);
+        $result = $this->doRequest($sendData, $packet["type"]);
 
         //retry when the send fail
         while ((!isset($result["code"]) || $result["code"] != 0) && $retry > 0) {
-            $result = $this->doRequest($sendData, $Packet["type"]);
+            $result = $this->doRequest($sendData, $packet["type"]);
             $retry--;
         }
 
@@ -418,13 +438,13 @@ class Client
             if ($errorcode == 0) {
                 $msg = "connect fail.check host dns.";
                 $errorcode = -1;
-                $Packet = Packet::packFormat($msg, $errorcode);
+                $packet = Packet::packFormat($msg, $errorcode);
             } else {
                 $msg = socket_strerror($errorcode);
-                $Packet = Packet::packFormat($msg, $errorcode);
+                $packet = Packet::packFormat($msg, $errorcode);
             }
 
-            return $Packet;
+            return $packet;
         }
 
         //if the type is async result will record the guid and client handle
