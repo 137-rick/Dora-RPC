@@ -31,7 +31,7 @@ abstract class Server
 
     final public function __construct($ip = "0.0.0.0", $port = 9567, $httpport = 9566, $groupConfig = array(), $reportConfig = array())
     {
-        $this->server = new \swoole_http_server($ip, $httpport, \SWOOLE_BASE);
+        $this->server = new \swoole_http_server($ip, $httpport);
         $this->tcpserver = $this->server->addListener($ip, $port, \SWOOLE_TCP);
         $httpconfig = array(
             'dispatch_mode' => 3,
@@ -120,7 +120,7 @@ abstract class Server
     {
         swoole_set_process_name("doraProcess|Monitor");
 
-        file_put_contents("./monitor.pid", getmypid());
+        //file_put_contents("./monitor.pid", getmypid());
 
         static $_redisObj;
 
@@ -620,12 +620,13 @@ abstract class Server
         echo "Server Was Shutdown..." . PHP_EOL;
         //shutdown
         $this->server->shutdown();
-
+        /*
         //fixed the process still running bug
         if ($this->monitorProcess != null) {
             $monitorPid = trim(file_get_contents("./monitor.pid"));
             \swoole_process::kill($monitorPid, SIGKILL);
         }
+        */
     }
 
 }
