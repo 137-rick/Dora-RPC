@@ -87,6 +87,8 @@ abstract class Server
         //init http server
         $this->server->set($httpconfig);
         $this->server->on('Start', array($this, 'onStart'));
+        $this->server->on('ManagerStart', array($this, 'onManagerStart'));
+
         $this->server->on('Request', array($this, 'onRequest'));
         $this->server->on('WorkerStart', array($this, 'onWorkerStart'));
         $this->server->on('WorkerError', array($this, 'onWorkerError'));
@@ -243,11 +245,21 @@ abstract class Server
     //application server first start
     final public function onStart(\swoole_server $serv)
     {
-        echo "MasterPid={$serv->master_pid}\n";
-        echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
         swoole_set_process_name("dora|Master");
 
+        echo "MasterPid={$serv->master_pid}\n";
+        echo "ManagerPid={$serv->master_pid}\n";
+        echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
+
         file_put_contents("./dorarpc.pid", $serv->master_pid);
+        file_put_contents("./dorarpcmanager.pid", $serv->manager_pid);
+
+    }
+
+    //application server first start
+    final public function onManagerStart(\swoole_server $serv)
+    {
+        swoole_set_process_name("dora|Manager");
     }
 
     //worker and task init
