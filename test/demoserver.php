@@ -1,5 +1,5 @@
 <?php
-include "../src/Doraconst.php";
+include "../src/DoraConst.php";
 include "../src/Packet.php";
 include "../src/Server.php";
 
