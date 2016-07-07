@@ -18,6 +18,8 @@ abstract class Server
     private $serverIP;
     private $serverPort;
 
+    private $monitorProcess = null;
+
     private $groupConfig;
 
     //for extends class overwrite default config
@@ -105,8 +107,8 @@ abstract class Server
             echo "Found Report Config... Start Report Process" . PHP_EOL;
             $this->reportConfig = $reportConfig;
             //use this report the state
-            $process = new \swoole_process(array($this, "monitorReport"));
-            $this->server->addProcess($process);
+            $this->monitorProcess = new \swoole_process(array($this, "monitorReport"));
+            $this->server->addProcess($this->monitorProcess);
         }
 
         $this->server->start();
@@ -117,6 +119,8 @@ abstract class Server
     final public function monitorReport(\swoole_process $process)
     {
         swoole_set_process_name("doraProcess|Monitor");
+
+        file_put_contents("./monitor.pid", getmypid());
 
         static $_redisObj;
 
@@ -613,7 +617,15 @@ abstract class Server
 
     final public function __destruct()
     {
+        echo "Server Was Shutdown..." . PHP_EOL;
+        //shutdown
         $this->server->shutdown();
+
+        //fixed the process still running bug
+        if ($this->monitorProcess != null) {
+            $monitorPid = trim(file_get_contents("./monitor.pid"));
+            \swoole_process::kill($monitorPid, SIGKILL);
+        }
     }
 
 }
