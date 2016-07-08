@@ -44,7 +44,7 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 > * zlib for compress packet
 
 ##Installation
-```
+```shell
 pecl install swoole
 
 vim composer.json
@@ -101,7 +101,7 @@ composer update
 > * 2 async get result by getAsyncData function 下发异步任务，下发成功返回下发成功提示，可以在后续调用getAsyncData 获取所有下发的异步结果
 
 ###TCP客户端(TCP Client)
-```
+```PHP
 include "../src/Doraconst.php";
 include "../src/Packet.php";
 include "../src/Client.php";
@@ -188,7 +188,7 @@ echo "max:" . $maxrequest . PHP_EOL;
 ###HTTP客户端(Http Client)
 ----------
 http protocol for the other language use performance is common.suggest used tcp client
-```
+```PHP
 
 for ($i = 0; $i < 10000; $i++) {
     $time = microtime(true);
@@ -259,7 +259,7 @@ echo "max:" . $maxrequest . PHP_EOL;
 ```
 
 ###服务端(Server)
-```
+```PHP
 include "src/Server.php";
 
 class Server extends DoraRPCServer {
@@ -301,7 +301,7 @@ $res = new Server();
 
 ----------
 ###客户端监控器(Client Local Monitor)
-```
+```PHP
 include "src/Doraconst.php";
 include "src/Packet.php";
 include "src/Monitor.php";
@@ -368,7 +368,7 @@ There is still a lot of optimization space
 
 ----------
 ###Optimize performance性能优化
-```
+```SHELL
 vim demoserver.php
 to see $externalConfig var
 and swoole offcial document
