@@ -8,14 +8,13 @@
 > * 后续有什么bug或者问题请提交Issue
 > * 新增加http协议接口，支持Keepalive，方便其他语言接入
 
-----------
 For complex projects separation, the project can be better maintained by the API project management.
 > * Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC
 > * Now support an simple PHP version 
 > * If you find something wrong,please submit an issue
 > * add the http protocol and KeepAlive for the other program language
 
-----------
+
 #设计思路(Design)
 http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 
@@ -27,8 +26,6 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 > * guid收发一致性检测，避免发送和接收数据不一致
 > * 基于redis制作的服务发现
 
-----------
-
 > * Single API RPC \ Multi API Concurrent RPC
 > * Asynchronous，synchronization no need result， synchronization get result by manual
 > * Please visit Swoole official for further infomation
@@ -36,8 +33,6 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 > * check the guid when the send<->recive
 > * service discovery.
 > * base on Redis. Service discovery for High available
-
-----------
 
 ##请安装依赖(depend)
 > * Swoole 1.8.x+
@@ -63,8 +58,6 @@ composer update
 
 ```
 
-----------
-
 ##文件功能简介(File)
 ###dora-rpc/src/Client.php
 > * 使用最简单的方式实现的客户端，通过这个框架可以轻松实现PHP的伪多线程，通过分布式加快接口响应速度及高可用
@@ -77,15 +70,11 @@ composer update
 > * 开启服务发现功能，服务端在启动的时候，如果指定redis配置则会自动将当前服务器信息注册到Redis上
 > * 返回结果是一个数组 分两部分，第一层是通讯状态code，第二层是处理状态 code
 
-----------
-
 > * a simple server
 > * you must extends the swserver and implement dowork function
 > * it's use for decrease the dev cycle
 > * when you setup the redis config the server will register this server to the redis for service discovery
 > * the result will be a two-level arrayfirst is communicate state 'code field' ,second is dowork state
-
-----------
 
 ###dora-rpc/src/Monitor.php
 > * 服务发现客户端，通过扫描Redis获取到所有可用后端服务列表，并生成配置到指定路径
@@ -119,7 +108,7 @@ $obj->changeMode($mode);
 for ($i = 0; $i < 10000; $i++) {
     //echo $i . PHP_EOL;
 
-    //---------single
+    //single
     $time = microtime(true);
 
     //single && sync
@@ -134,7 +123,7 @@ for ($i = 0; $i < 10000; $i++) {
     $ret = $obj->singleAPI("/module_c/abd" . $i, array("yes" => 233, "foo" => $i), \DoraRPC\DoraConst::SW_MODE_ASYNCRESULT, 1);
     var_dump("single async result", $ret);
 
-    //---------multi
+    //multi
 
     //multi && sync
     $data = array(
@@ -176,7 +165,7 @@ echo "max:" . $maxrequest . PHP_EOL;
 ```
 
 ###HTTP客户端(Http Client)
-----------
+
 http protocol for the other language use performance is common.suggest used tcp client
 ```PHP
 
@@ -287,8 +276,6 @@ class Server extends DoraRPCServer {
 
 $res = new Server();
 ```
-
-----------
 ###客户端监控器(Client Local Monitor)
 ```PHP
 include "src/Doraconst.php";
@@ -314,15 +301,10 @@ $res = new \DoraRPC\Monitor("0.0.0.0", 9569, $redisconfig, "./client.conf.php");
 //this server will auto get the node server list from redis and general the client config on special path
 ```
 
-
-----------
-
 ###以上代码测试方法
 include以上两个文件，使用命令行启动即可（客户端支持在apache nginx fpm内执行，服务端只支持命令行启动）
 > * php democlient.php
 > * php demoserver.php
-
-----------
 
 ##错误码及含义(Error Code)
 > * 0 Success work
@@ -340,22 +322,18 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100099 unknow communicate mode have been set
 > * 100100 guid wront please retry..
 
-----------
-
 ##性能(Performance)
 > * Mac I7 Intel 2.2Mhz 
 > * Vagrant with Vm 1 Core
 > * 1G Memory
 > * with example code (loop forever)
 
-----------
 ###测试结果Result
 > * Network Cost:0.002~0.004/sec Per Request
 > * CPU 10~25%
 以上还有很大优化空间
 There is still a lot of optimization space
 
-----------
 ###Optimize performance性能优化
 ```
 vim demoserver.php
@@ -365,7 +343,6 @@ and swoole offcial document
 如果想优化性能请参考以上文件的$externalConfig配置
 ```
 
-----------
 ###License授权
 Apache
 
