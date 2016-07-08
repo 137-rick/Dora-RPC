@@ -1,5 +1,6 @@
 #Dora RPC
 ----------
+[![Build Status](https://travis-ci.org/xcl3721/Dora-RPC.svg?branch=master)](https://travis-ci.org/xcl3721/Dora-RPC)
 ##简介(Introduction)
 用于复杂项目前后端分离，分离后项目都通过API工作可更好维护管理。
 > * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
