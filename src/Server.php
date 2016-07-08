@@ -8,6 +8,8 @@ namespace DoraRPC;
  */
 abstract class Server
 {
+    const MASTER_PID = './dorarpc.pid';
+    const MANAGER_PID = './dorarpcmanager.pid';
 
     private $tcpserver = null;
     private $server = null;
@@ -22,10 +24,46 @@ abstract class Server
 
     private $groupConfig;
 
-    //for extends class overwrite default config
-    //用于继承类覆盖默认配置
-    protected $externalConfig = array();
-    protected $externalHttpConfig = array();
+    protected $httpConfig = [
+        'dispatch_mode' => 3,
+
+        'package_max_length' => 1024 * 1024 * 2,
+        'buffer_output_size' => 1024 * 1024 * 3,
+        'pipe_buffer_size' => 1024 * 1024 * 32,
+        'open_tcp_nodelay' => 1,
+
+        'heartbeat_check_interval' => 5,
+        'heartbeat_idle_time' => 10,
+        'open_cpu_affinity' => 1,
+
+        'reactor_num' => 32,
+        'worker_num' => 40,
+        'task_worker_num' => 20,
+
+        'max_request' => 0, //必须设置为0否则并发任务容易丢,don't change this number
+        'task_max_request' => 4000,
+
+        'backlog' => 3000,
+        'log_file' => '/tmp/sw_server.log',
+        'task_tmpdir' => '/tmp/swtasktmp/',
+
+        'daemonize' => 1,
+    ];
+
+    protected $tcpConfig = [
+        'open_length_check' => 1,
+        'package_length_type' => 'N',
+        'package_length_offset' => 0,
+        'package_body_offset' => 4,
+
+        'package_max_length' => 1024 * 1024 * 2,
+        'buffer_output_size' => 1024 * 1024 * 3,
+        'pipe_buffer_size' => 1024 * 1024 * 32,
+
+        'open_tcp_nodelay' => 1,
+
+        'backlog' => 3000,
+    ];
 
     abstract public function initServer($server);
 
@@ -33,59 +71,9 @@ abstract class Server
     {
         $this->server = new \swoole_http_server($ip, $httpport);
         $this->tcpserver = $this->server->addListener($ip, $port, \SWOOLE_TCP);
-        $httpconfig = array(
-            'dispatch_mode' => 3,
 
-            'package_max_length' => 1024 * 1024 * 2,
-            'buffer_output_size' => 1024 * 1024 * 3,
-            'pipe_buffer_size' => 1024 * 1024 * 32,
-            'open_tcp_nodelay' => 1,
-
-            'heartbeat_check_interval' => 5,
-            'heartbeat_idle_time' => 10,
-            'open_cpu_affinity' => 1,
-
-            'reactor_num' => 32,
-            'worker_num' => 40,
-            'task_worker_num' => 20,
-
-            'max_request' => 0, //必须设置为0否则并发任务容易丢,don't change this number
-            'task_max_request' => 4000,
-
-            'backlog' => 3000,
-            'log_file' => '/tmp/sw_server.log',
-            'task_tmpdir' => '/tmp/swtasktmp/',
-
-            'daemonize' => 1,
-        );
-
-        $tcpconfig = array(
-            'open_length_check' => 1,
-            'package_length_type' => 'N',
-            'package_length_offset' => 0,
-            'package_body_offset' => 4,
-
-            'package_max_length' => 1024 * 1024 * 2,
-            'buffer_output_size' => 1024 * 1024 * 3,
-            'pipe_buffer_size' => 1024 * 1024 * 32,
-
-            'open_tcp_nodelay' => 1,
-
-            'backlog' => 3000,
-        );
-
-        //merge config
-        if (!empty($this->externalConfig)) {
-            $httpconfig = array_merge($httpconfig, $this->externalHttpConfig);
-            $tcpconfig = array_merge($tcpconfig, $this->externalConfig);
-        }
-
-        //init tcp server
-        $this->tcpserver->set($tcpconfig);
         $this->tcpserver->on('Receive', array($this, 'onReceive'));
-
         //init http server
-        $this->server->set($httpconfig);
         $this->server->on('Start', array($this, 'onStart'));
         $this->server->on('ManagerStart', array($this, 'onManagerStart'));
 
@@ -112,6 +100,34 @@ abstract class Server
             $this->monitorProcess = new \swoole_process(array($this, "monitorReport"));
             $this->server->addProcess($this->monitorProcess);
         }
+    }
+
+    /**
+     * Configuration Server.
+     *
+     * @param array $config
+     * @return $this
+     */
+    public function configure(array $config)
+    {
+        if (isset($config['http'])) {
+            $this->httpConfig = array_merge($this->httpConfig, $config['http']);
+        }
+
+        if (isset($config['tcp'])) {
+            $this->tcpConfig = array_merge($this->tcpConfig, $config['tcp']);
+        }
+        return $this;
+    }
+
+    /**
+     * Start Server.
+     * @return void;
+     */
+    public function start()
+    {
+        $this->server->set($this->httpConfig);
+        $this->tcpserver->set($this->tcpConfig);
 
         $this->server->start();
     }
@@ -251,8 +267,8 @@ abstract class Server
         echo "ManagerPid={$serv->master_pid}\n";
         echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
 
-        file_put_contents("./dorarpc.pid", $serv->master_pid);
-        file_put_contents("./dorarpcmanager.pid", $serv->manager_pid);
+        file_put_contents(static::MASTER_PID, $serv->master_pid);
+        file_put_contents(static::MANAGER_PID, $serv->manager_pid);
 
     }
 
