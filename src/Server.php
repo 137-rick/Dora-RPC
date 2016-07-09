@@ -15,8 +15,6 @@ abstract class Server
     private $server = null;
     private $taskInfo = array();
 
-    private $reportConfig = array();
-
     private $serverIP;
     private $serverPort;
 
@@ -90,7 +88,7 @@ abstract class Server
         $this->serverIP = $ip;
         $this->serverPort = $port;
 
-        $this->group($groupConfig);
+        $this->groupConfig = $groupConfig;
 
         $this->report($reportConfig);
     }
@@ -113,14 +111,9 @@ abstract class Server
         return $this;
     }
 
-    public function group(array $group)
-    {
-
-    }
-
     /**
      * Server report to redis.
-     * 
+     *
      * @param array $report
      */
     public function report(array $report)
@@ -142,7 +135,13 @@ abstract class Server
                             // 上报的服务器IP
                             $reportServerIP = $self->getReportServerIP();
                             //register this server
-                            $_redisObj[$key]->sadd("dora.serverlist", json_encode(array("node" => array("ip" => $reportServerIP, "port" => $self->serverPort), "group" => $self->groupConfig["list"])));
+                            $_redisObj[$key]->sadd("dora.serverlist", json_encode(array(
+                                "node" => array(
+                                    "ip" => $reportServerIP,
+                                    "port" => $self->serverPort
+                                ),
+                                "group" => $self->groupConfig["list"]
+                            )));
                             //set time out
                             $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $self->serverPort . ".time", time());
 
