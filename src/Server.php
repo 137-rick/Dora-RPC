@@ -90,16 +90,9 @@ abstract class Server
         $this->serverIP = $ip;
         $this->serverPort = $port;
 
-        //store current server group
-        $this->groupConfig = $groupConfig;
-        //if user set the report config will start report
-        if (count($reportConfig) > 0) {
-            echo "Found Report Config... Start Report Process" . PHP_EOL;
-            $this->reportConfig = $reportConfig;
-            //use this report the state
-            $this->monitorProcess = new \swoole_process(array($this, "monitorReport"));
-            $this->server->addProcess($this->monitorProcess);
-        }
+        $this->group($groupConfig);
+
+        $this->report($reportConfig);
     }
 
     /**
@@ -120,62 +113,67 @@ abstract class Server
         return $this;
     }
 
+    public function group(array $group)
+    {
+
+    }
+
+    /**
+     * Server report to redis.
+     * 
+     * @param array $report
+     */
+    public function report(array $report)
+    {
+        $self = $this;
+        foreach ($report as $config) {
+            $this->monitorProcess = new \swoole_process(function () use ($config, $self) {
+                swoole_set_process_name("doraProcess|Monitor");
+                while (true) {
+                    echo $config['ip'] . $config['port'] . PHP_EOL;
+                    if (trim($config["ip"]) && $config["port"] > 0) {
+                        $key = $config["ip"] . "_" . $config["port"];
+                        try {
+                            if (!isset($_redisObj[$key])) {
+                                //if not connect
+                                $_redisObj[$key] = new \Redis();
+                                $_redisObj[$key]->connect($config["ip"], $config["port"]);
+                            }
+                            // 上报的服务器IP
+                            $reportServerIP = $self->getReportServerIP();
+                            //register this server
+                            $_redisObj[$key]->sadd("dora.serverlist", json_encode(array("node" => array("ip" => $reportServerIP, "port" => $self->serverPort), "group" => $self->groupConfig["list"])));
+                            //set time out
+                            $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $self->serverPort . ".time", time());
+
+                            //echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
+
+                        } catch (\Exception $ex) {
+                            $_redisObj[$key] = null;
+                            echo "connect to Service Discovery error:" . $config["ip"] . ":" . $config["port"] . PHP_EOL;
+                        }
+                    }
+
+                    sleep(10);
+                    //sleep 10 sec and report again
+                }
+            });
+            $this->server->addProcess($this->monitorProcess);
+        }
+    }
+
     /**
      * Start Server.
+     *
      * @return void;
      */
     public function start()
     {
         $this->server->set($this->httpConfig);
+
         $this->tcpserver->set($this->tcpConfig);
 
         $this->server->start();
-    }
-
-    //////////////////////////////server monitor start/////////////////////////////
-    //server discovery report
-    final public function monitorReport(\swoole_process $process)
-    {
-        swoole_set_process_name("doraProcess|Monitor");
-
-        //file_put_contents("./monitor.pid", getmypid());
-
-        static $_redisObj;
-
-        while (true) {
-            //register group and server
-            $redisconfig = $this->reportConfig;
-            //register this node server info to redis
-            foreach ($redisconfig as $redisitem) {
-
-                //validate redis ip and port
-                if (trim($redisitem["ip"]) && $redisitem["port"] > 0) {
-                    $key = $redisitem["ip"] . "_" . $redisitem["port"];
-                    try {
-                        if (!isset($_redisObj[$key])) {
-                            //if not connect
-                            $_redisObj[$key] = new \Redis();
-                            $_redisObj[$key]->connect($redisitem["ip"], $redisitem["port"]);
-                        }
-                        // 上报的服务器IP
-                        $reportServerIP = $this->getReportServerIP();
-                        //register this server
-                        $_redisObj[$key]->sadd("dora.serverlist", json_encode(array("node" => array("ip" => $reportServerIP, "port" => $this->serverPort), "group" => $this->groupConfig["list"])));
-                        //set time out
-                        $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $this->serverPort . ".time", time());
-
-                        //echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
-
-                    } catch (\Exception $ex) {
-                        $_redisObj[$key] = null;
-                        echo "connect to Service Discovery error:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
-                    }
-                }
-            }
-
-            sleep(10);
-            //sleep 10 sec and report again
-        }
     }
 
     //http request process
@@ -478,6 +476,7 @@ abstract class Server
 
     /**
      * 获取上报的服务器IP
+     *
      * @return string
      */
     protected function getReportServerIP()
