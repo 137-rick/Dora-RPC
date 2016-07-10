@@ -22,7 +22,7 @@ abstract class Server
 
     private $groupConfig;
 
-    protected $httpConfig = [
+    protected $httpConfig = array (
         'dispatch_mode' => 3,
 
         'package_max_length' => 1024 * 1024 * 2,
@@ -46,9 +46,9 @@ abstract class Server
         'task_tmpdir' => '/tmp/swtasktmp/',
 
         'daemonize' => 1,
-    ];
+    );
 
-    protected $tcpConfig = [
+    protected $tcpConfig = array(
         'open_length_check' => 1,
         'package_length_type' => 'N',
         'package_length_offset' => 0,
@@ -61,7 +61,7 @@ abstract class Server
         'open_tcp_nodelay' => 1,
 
         'backlog' => 3000,
-    ];
+    );
 
     abstract public function initServer($server);
 

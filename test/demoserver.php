@@ -51,8 +51,8 @@ $redisconfig = array(
 //ok start server
 $res = new Server("0.0.0.0", 9567, 9566, $groupConfig, $redisconfig);
 
-$res->configure([
-    'tcp' => [
+$res->configure(array(
+    'tcp' => array(
         //to improve the accept performance ,suggest the number of cpu X 2
         //如果想提高请求接收能力，更改这个，推荐cpu个数x2
         'reactor_num' => 16,
@@ -70,10 +70,10 @@ $res->configure([
         'log_file' => '/tmp/sw_server.log',
 
         'task_tmpdir' => '/tmp/swtasktmp/',
-    ],
-    'http' => [
+    ),
+    'http' => array(
         'daemonize' => false,
-    ]
-]);
+    )
+));
 
 $res->start();
