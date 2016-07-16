@@ -1,12 +1,11 @@
 #Dora RPC
  
 [![Build Status](https://travis-ci.org/xcl3721/Dora-RPC.svg?branch=master)](https://travis-ci.org/xcl3721/Dora-RPC) [![Latest Stable Version](https://poser.pugx.org/xcl3721/dora-rpc/v/stable)](https://packagist.org/packages/xcl3721/dora-rpc) [![Latest Unstable Version](https://poser.pugx.org/xcl3721/dora-rpc/v/unstable)](https://packagist.org/packages/xcl3721/dora-rpc) [![License](https://poser.pugx.org/xcl3721/dora-rpc/license)](https://packagist.org/packages/xcl3721/dora-rpc)
-##简介(Introduction)
-用于复杂项目前后端分离，分离后项目都通过API工作可更好维护管理。
-> * 是一款基础于Swoole定长包头通讯协议的最精简的RPC
-> * 目前只提供PHP语言代码
-> * 后续有什么bug或者问题请提交Issue
-> * 新增加http协议接口，支持Keepalive，方便其他语言接入
+## 简介(Introduction)
+
+Dora RPC 是一款基础于Swoole定长包头通讯协议的最精简的RPC, 用于复杂项目前后端分离，分离后项目都通过API工作可更好维护管理。
+
+问题提交: [Issue](https://github.com/xcl3721/Dora-RPC/issues)
 
 For complex projects separation, the project can be better maintained by the API project management.
 > * Dora RPC is an Basic Swoole Fixed Header TCP Proctol tiny RPC

@@ -20,14 +20,12 @@ abstract class Server
 
     private $monitorProcess = null;
 
-    private $groupConfig;
-
     protected $httpConfig = array (
         'dispatch_mode' => 3,
 
-        'package_max_length' => 1024 * 1024 * 2,
-        'buffer_output_size' => 1024 * 1024 * 3,
-        'pipe_buffer_size' => 1024 * 1024 * 32,
+        'package_max_length' => 2097152, // 1024 * 1024 * 2,
+        'buffer_output_size' => 3145728, //1024 * 1024 * 3,
+        'pipe_buffer_size' => 33554432, //1024 * 1024 * 32,
         'open_tcp_nodelay' => 1,
 
         'heartbeat_check_interval' => 5,
@@ -54,9 +52,9 @@ abstract class Server
         'package_length_offset' => 0,
         'package_body_offset' => 4,
 
-        'package_max_length' => 1024 * 1024 * 2,
-        'buffer_output_size' => 1024 * 1024 * 3,
-        'pipe_buffer_size' => 1024 * 1024 * 32,
+        'package_max_length' => 2097152, // 1024 * 1024 * 2,
+        'buffer_output_size' => 3145728, //1024 * 1024 * 3,
+        'pipe_buffer_size' => 33554432, // 1024 * 1024 * 32,
 
         'open_tcp_nodelay' => 1,
 
@@ -65,7 +63,7 @@ abstract class Server
 
     abstract public function initServer($server);
 
-    final public function __construct($ip = "0.0.0.0", $port = 9567, $httpport = 9566, $groupConfig = array(), $reportConfig = array())
+    final public function __construct($ip = "0.0.0.0", $port = 9567, $httpport = 9566)
     {
         $this->server = new \swoole_http_server($ip, $httpport);
         $this->tcpserver = $this->server->addListener($ip, $port, \SWOOLE_TCP);
@@ -87,10 +85,6 @@ abstract class Server
         //store current ip port
         $this->serverIP = $ip;
         $this->serverPort = $port;
-
-        $this->groupConfig = $groupConfig;
-
-        $this->report($reportConfig);
     }
 
     /**
@@ -112,11 +106,10 @@ abstract class Server
     }
 
     /**
-     * Server report to redis.
      *
      * @param array $report
      */
-    public function report(array $report)
+    public function discovery(array $report)
     {
         $self = $this;
         foreach ($report as $config) {
@@ -133,18 +126,17 @@ abstract class Server
                                 $_redisObj[$key]->connect($config["ip"], $config["port"]);
                             }
                             // 上报的服务器IP
-                            $reportServerIP = $self->getReportServerIP();
+                            $reportServerIP = $self->getLocalIp();
                             //register this server
                             $_redisObj[$key]->sadd("dora.serverlist", json_encode(array(
                                 "node" => array(
                                     "ip" => $reportServerIP,
                                     "port" => $self->serverPort
                                 ),
-                                "group" => $self->groupConfig["list"]
+                                "group" => array_keys($config),
                             )));
                             //set time out
                             $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $self->serverPort . ".time", time());
-
                             //echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
 
                         } catch (\Exception $ex) {
@@ -478,7 +470,7 @@ abstract class Server
      *
      * @return string
      */
-    protected function getReportServerIP()
+    protected function getLocalIp()
     {
         if ($this->serverIP == '0.0.0.0' || $this->serverIP == '127.0.0.1') {
             $serverIps = swoole_get_local_ip();
@@ -496,6 +488,7 @@ abstract class Server
                 }
             }
         }
+
         return $this->serverIP;
     }
 

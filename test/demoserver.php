@@ -27,31 +27,24 @@ class Server extends \DoraRPC\Server
     }
 }
 
-//this server belong which logical group
-//different group different api(for Isolation)
-$groupConfig = array(
-    "list" => array(
-        "group1",
-        "group2",
-    ),
-);
-
 //redis for service discovery register
 //when you on product env please prepare more redis to registe service for high available
-$redisconfig = array(
-    array(//first reporter
-        "ip" => "127.0.0.1",
-        "port" => "6379",
-    ),
-    array(//next reporter
-        "ip" => "127.0.0.1",
-        "port" => "6379",
+$discovery = array(
+    'group1' => array(
+        array(//first reporter
+            "ip" => "127.0.0.1",
+            "port" => "6379",
+        ),
+        array(//next reporter
+            "ip" => "127.0.0.1",
+            "port" => "6379",
+        ),
     ),
 );
 //ok start server
-$res = new Server("0.0.0.0", 9567, 9566, $groupConfig, $redisconfig);
+$server = new Server("0.0.0.0", 9567, 9566);
 
-$res->configure(array(
+$server->configure(array(
     'tcp' => array(
         //to improve the accept performance ,suggest the number of cpu X 2
         //如果想提高请求接收能力，更改这个，推荐cpu个数x2
@@ -76,4 +69,6 @@ $res->configure(array(
     )
 ));
 
-$res->start();
+$server->discovery($discovery);
+
+$server->start();
