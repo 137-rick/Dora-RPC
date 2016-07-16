@@ -20,7 +20,7 @@ abstract class Server
 
     private $monitorProcess = null;
 
-    protected $httpConfig = array (
+    protected $httpConfig = array(
         'dispatch_mode' => 3,
 
         'package_max_length' => 2097152, // 1024 * 1024 * 2,
@@ -112,44 +112,45 @@ abstract class Server
     public function discovery(array $report)
     {
         $self = $this;
-        foreach ($report as $config) {
-            $this->monitorProcess = new \swoole_process(function () use ($config, $self) {
-                swoole_set_process_name("doraProcess|Monitor");
-                while (true) {
-                    echo $config['ip'] . $config['port'] . PHP_EOL;
-                    if (trim($config["ip"]) && $config["port"] > 0) {
-                        $key = $config["ip"] . "_" . $config["port"];
-                        try {
-                            if (!isset($_redisObj[$key])) {
-                                //if not connect
-                                $_redisObj[$key] = new \Redis();
-                                $_redisObj[$key]->connect($config["ip"], $config["port"]);
+        foreach ($report as $group => $discovery) {
+            foreach ($discovery as $config) {
+                $this->monitorProcess = new \swoole_process(function () use ($config, $group, $self) {
+                    swoole_set_process_name("doraProcess|Monitor");
+                    while (true) {
+                        if (trim($config["ip"]) && $config["port"] > 0) {
+                            $key = $config["ip"] . "_" . $config["port"];
+                            try {
+                                if (!isset($_redisObj[$key])) {
+                                    //if not connect
+                                    $_redisObj[$key] = new \Redis();
+                                    $_redisObj[$key]->connect($config["ip"], $config["port"]);
+                                }
+                                // 上报的服务器IP
+                                $reportServerIP = $self->getLocalIp();
+                                //register this server
+                                $_redisObj[$key]->sadd("dora.serverlist", json_encode(array(
+                                    "node" => array(
+                                        "ip" => $reportServerIP,
+                                        "port" => $self->serverPort
+                                    ),
+                                    "group" => $group,
+                                )));
+                                //set time out
+                                $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $self->serverPort . ".time", time());
+                                echo "Reported Service Discovery:" . $config["ip"] . ":" . $config["port"] . PHP_EOL;
+
+                            } catch (\Exception $ex) {
+                                $_redisObj[$key] = null;
+                                echo "connect to Service Discovery error:" . $config["ip"] . ":" . $config["port"] . PHP_EOL;
                             }
-                            // 上报的服务器IP
-                            $reportServerIP = $self->getLocalIp();
-                            //register this server
-                            $_redisObj[$key]->sadd("dora.serverlist", json_encode(array(
-                                "node" => array(
-                                    "ip" => $reportServerIP,
-                                    "port" => $self->serverPort
-                                ),
-                                "group" => array_keys($config),
-                            )));
-                            //set time out
-                            $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $self->serverPort . ".time", time());
-                            //echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
-
-                        } catch (\Exception $ex) {
-                            $_redisObj[$key] = null;
-                            echo "connect to Service Discovery error:" . $config["ip"] . ":" . $config["port"] . PHP_EOL;
                         }
-                    }
 
-                    sleep(10);
-                    //sleep 10 sec and report again
-                }
-            });
-            $this->server->addProcess($this->monitorProcess);
+                        sleep(10);
+                        //sleep 10 sec and report again
+                    }
+                });
+                $this->server->addProcess($this->monitorProcess);
+            }
         }
     }
 

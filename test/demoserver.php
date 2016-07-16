@@ -27,20 +27,6 @@ class Server extends \DoraRPC\Server
     }
 }
 
-//redis for service discovery register
-//when you on product env please prepare more redis to registe service for high available
-$discovery = array(
-    'group1' => array(
-        array(//first reporter
-            "ip" => "127.0.0.1",
-            "port" => "6379",
-        ),
-        array(//next reporter
-            "ip" => "127.0.0.1",
-            "port" => "6379",
-        ),
-    ),
-);
 //ok start server
 $server = new Server("0.0.0.0", 9567, 9566);
 
@@ -69,6 +55,19 @@ $server->configure(array(
     )
 ));
 
-$server->discovery($discovery);
+//redis for service discovery register
+//when you on product env please prepare more redis to registe service for high available
+$server->discovery(array(
+    'group1' => array(
+        array(//first reporter
+            "ip" => "127.0.0.1",
+            "port" => "6379",
+        ),
+        array(//next reporter
+            "ip" => "127.0.0.1",
+            "port" => "6379",
+        ),
+    ),
+));
 
 $server->start();

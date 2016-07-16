@@ -6,7 +6,7 @@ include "../src/Monitor.php";
 $config = array(
     //redis for service discovery register
     //when you on product env please prepare more redis to registe service for high available
-    "Discovery" => array(
+    "discovery" => array(
         //first reporter
         array(
             "ip" => "127.0.0.1",
@@ -19,14 +19,16 @@ $config = array(
         ),
     ),
     //general config path for client
-    "Config" => "./client.conf.php",
+    "config" => "./client.conf.php",
 
     //log monitor path
-    "Log" => array(
+    "log" => array(
         "tag1" => array("tag" => "", "path" => "./log/"),
         "tag2" => array("tag" => "", "path" => "./log2/"),
     ),
 );
 
 //ok start server
-$res = new \DoraRPC\Monitor("0.0.0.0", 9569, $config);
+$monitor = new \DoraRPC\Monitor("0.0.0.0", 9569, $config);
+
+$monitor->start();
