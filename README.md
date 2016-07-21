@@ -40,21 +40,7 @@ http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
 
 ##Installation
 ```
-pecl install swoole
-
-vim composer.json
-added:
-{
-    "name": "xx",
-    "description": "xxx",
-    "require": {
-        "xcl3721/dora-rpc": ">=0.3.4"
-    }
-}
-
-:wq
-composer update
-
+composer require "xcl3721/dora-rpc"
 ```
 
 ##文件功能简介(File)
