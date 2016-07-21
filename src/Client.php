@@ -426,9 +426,7 @@ class Client
             return $data;
         }
 
-        var_dump($sendData);
         $ret = $client->send($sendData);
-        vaR_dump($ret);
 
         //ok fail
         if (!$ret) {
