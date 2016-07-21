@@ -7,7 +7,16 @@ return array (
     array (
       'ip' => '10.0.2.15',
       'port' => 9567,
-      'updatetime' => '1468660306',
+      'updatetime' => '1469084113',
+    ),
+  ),
+  'group2' => 
+  array (
+    '10.0.2.15_9567' => 
+    array (
+      'ip' => '10.0.2.15',
+      'port' => 9567,
+      'updatetime' => '1469084113',
     ),
   ),
 );

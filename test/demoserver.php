@@ -58,7 +58,9 @@ $server->configure(array(
 //redis for service discovery register
 //when you on product env please prepare more redis to registe service for high available
 $server->discovery(array(
-    'group1' => array(
+    'group1', 'group2'
+), array(
+    array(
         array(//first reporter
             "ip" => "127.0.0.1",
             "port" => "6379",

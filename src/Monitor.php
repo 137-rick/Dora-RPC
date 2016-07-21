@@ -57,9 +57,13 @@ class Monitor
                                             continue;
                                         }
 
-                                        $clientkey = $info["node"]["ip"] . "_" . $info["node"]["port"];
-                                        $server_list_result[$info["group"]][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
-                                        $server_list_result[$info["group"]][$clientkey]["updatetime"] = $lastupdatetime;
+                                        if (is_array($info["group"])) {
+                                            foreach ($info["group"] as $groupname) {
+                                                $clientkey = $info["node"]["ip"] . "_" . $info["node"]["port"];
+                                                $server_list_result[$groupname][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
+                                                $server_list_result[$groupname][$clientkey]["updatetime"] = $lastupdatetime;
+                                            }
+                                        }
                                         //foreach group and record this info
                                     }//decode info if
                                 }// foreach

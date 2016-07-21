@@ -42,8 +42,6 @@ abstract class Server
         'backlog' => 3000,
         'log_file' => '/tmp/sw_server.log',
         'task_tmpdir' => '/tmp/swtasktmp/',
-
-        'daemonize' => 1,
     );
 
     protected $tcpConfig = array(
@@ -107,12 +105,13 @@ abstract class Server
 
     /**
      *
+     * @param array $group
      * @param array $report
      */
-    public function discovery(array $report)
+    public function discovery(array $group, array $report)
     {
         $self = $this;
-        foreach ($report as $group => $discovery) {
+        foreach ($report as $discovery) {
             foreach ($discovery as $config) {
                 $this->monitorProcess = new \swoole_process(function () use ($config, $group, $self) {
                     swoole_set_process_name("doraProcess|Monitor");
