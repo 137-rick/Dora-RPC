@@ -227,7 +227,7 @@ abstract class Server
                     return;
                 }
                 if ($params["api"]["cmd"]["name"] == "reloadTask") {
-                    $pack = Packet::packFormat("OK", 0, array());
+                    $pack = Packet::packFormat("OK", 0, array('server' => $this->server->stats()));
                     $this->server->reload(true);
                     $pack["guid"] = $task["guid"];
                     $response->end(json_encode($pack));
@@ -364,29 +364,32 @@ abstract class Server
                 return true;
                 break;
             case DoraConst::SW_CONTROL_CMD:
-                if ($requestInfo["api"]["cmd"]["name"] == "getStat") {
-                    $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
-                    $pack["guid"] = $task["guid"];
-                    $pack = Packet::packEncode($pack);
-                    $serv->send($fd, $pack);
-                    return true;
+                switch ($requestInfo["api"]["cmd"]["name"]) {
+                    case "getStat":
+                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
+                        $pack["guid"] = $task["guid"];
+                        $pack = Packet::packEncode($pack);
+                        $serv->send($fd, $pack);
+                        return true;
+
+                        break;
+                    case "reloadTask":
+                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
+                        $pack["guid"] = $task["guid"];
+                        $pack = Packet::packEncode($pack);
+                        $serv->send($fd, $pack);
+                        $serv->reload(true);
+                        return true;
+
+                        break;
+                    default:
+                        $pack = Packet::packFormat("unknow cmd", 100011);
+                        $pack = Packet::packEncode($pack);
+
+                        $serv->send($fd, $pack);
+                        unset($this->taskInfo[$fd]);
+                        break;
                 }
-
-                if ($requestInfo["api"]["cmd"]["name"] == "reloadTask") {
-                    $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
-                    $pack["guid"] = $task["guid"];
-                    $pack = Packet::packEncode($pack);
-                    $serv->send($fd, $pack);
-                    $serv->reload(true);
-                    return true;
-                }
-
-                //no one process
-                $pack = Packet::packFormat("unknow cmd", 100011);
-                $pack = Packet::packEncode($pack);
-
-                $serv->send($fd, $pack);
-                unset($this->taskInfo[$fd]);
                 break;
 
             case DoraConst::SW_MODE_ASYNCRESULT_SINGLE:
@@ -518,11 +521,11 @@ abstract class Server
         switch ($data["type"]) {
 
             case DoraConst::SW_MODE_WAITRESULT_SINGLE:
-                $Packet = Packet::packFormat("OK", 0, $data["result"]);
-                $Packet["guid"] = $guid;
-                $Packet = Packet::packEncode($Packet, $data["protocol"]);
+                $packet = Packet::packFormat("OK", 0, $data["result"]);
+                $packet["guid"] = $guid;
+                $packet = Packet::packEncode($packet, $data["protocol"]);
 
-                $serv->send($fd, $Packet);
+                $serv->send($fd, $packet);
                 unset($this->taskInfo[$fd][$guid]);
 
                 return true;
@@ -530,10 +533,10 @@ abstract class Server
 
             case DoraConst::SW_MODE_WAITRESULT_MULTI:
                 if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
-                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
-                    $Packet["guid"] = $guid;
-                    $Packet = Packet::packEncode($Packet, $data["protocol"]);
-                    $serv->send($fd, $Packet);
+                    $packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
+                    $packet["guid"] = $guid;
+                    $packet = Packet::packEncode($packet, $data["protocol"]);
+                    $serv->send($fd, $packet);
                     //$serv->close($fd);
                     unset($this->taskInfo[$fd][$guid]);
 
@@ -546,25 +549,25 @@ abstract class Server
                 break;
 
             case DoraConst::SW_MODE_ASYNCRESULT_SINGLE:
-                $Packet = Packet::packFormat("OK", 0, $data["result"]);
-                $Packet["guid"] = $guid;
+                $packet = Packet::packFormat("OK", 0, $data["result"]);
+                $packet["guid"] = $guid;
                 //flag this is result
-                $Packet["isresult"] = 1;
-                $Packet = Packet::packEncode($Packet, $data["protocol"]);
+                $packet["isresult"] = 1;
+                $packet = Packet::packEncode($packet, $data["protocol"]);
 
                 //sys_get_temp_dir
-                $serv->send($fd, $Packet);
+                $serv->send($fd, $packet);
                 unset($this->taskInfo[$fd][$guid]);
 
                 return true;
                 break;
             case DoraConst::SW_MODE_ASYNCRESULT_MULTI:
                 if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
-                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
-                    $Packet["guid"] = $guid;
-                    $Packet["isresult"] = 1;
-                    $Packet = Packet::packEncode($Packet, $data["protocol"]);
-                    $serv->send($fd, $Packet);
+                    $packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
+                    $packet["guid"] = $guid;
+                    $packet["isresult"] = 1;
+                    $packet = Packet::packEncode($packet, $data["protocol"]);
+                    $serv->send($fd, $packet);
 
                     unset($this->taskInfo[$fd][$guid]);
 
@@ -607,18 +610,14 @@ abstract class Server
             case DoraConst::SW_MODE_WAITRESULT_MULTI:
                 //all task finished
                 if (count($this->taskInfo[$fd][$guid]["taskkey"]) == 0) {
-                    $Packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
-                    $Packet["guid"] = $guid;
-                    $Packet = Packet::packEncode($Packet, $data["protocol"]);
+                    $packet = Packet::packFormat("OK", 0, $this->taskInfo[$fd][$guid]["result"]);
+                    $packet["guid"] = $guid;
+                    $packet = Packet::packEncode($packet, $data["protocol"]);
                     unset($this->taskInfo[$fd][$guid]);
-                    $response->end($Packet);
+                    $response->end($packet);
 
-                    return true;
-                } else {
-                    //not finished
-                    //waiting other result
-                    return true;
                 }
+                return true;
                 break;
             default:
 
