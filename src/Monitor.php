@@ -11,88 +11,93 @@ class Monitor
     protected $_config;
 
     //server report
-    final public function generalConfig(\swoole_process $process)
+    final public function discovery(array $config)
     {
-        swoole_set_process_name("php monitor service discovery");
+        $self = $this;
 
-        static $_redisObj = array();
+        $this->_server->addProcess(new \swoole_process(function () use ($config, $self) {
 
-        while (true) {
-            //for result list
-            $server_list_result = array();
+            swoole_set_process_name("php monitor service discovery");
 
-            //get redis config
-            $redisconfig = $this->_config["redis"];
+            static $_redisObj = array();
 
-            //connect all redis
-            foreach ($redisconfig as $redisitem) {
-                //validate redis ip and port
-                if (trim($redisitem["ip"]) && $redisitem["port"] > 0) {
-                    $key = $redisitem["ip"] . "_" . $redisitem["port"];
-                    try {
-                        //connecte redis
-                        if (!isset($_redisObj[$key])) {
-                            //if not connect
-                            $_redisObj[$key] = new \Redis();
-                            $_redisObj[$key]->connect($redisitem["ip"], $redisitem["port"]);
+            while (true) {
+                //for result list
+                $server_list_result = array();
+
+                //get redis config
+                $redisconfig = $self->_config["redis"];
+
+                //connect all redis
+                foreach ($redisconfig as $redisitem) {
+                    //validate redis ip and port
+                    if (trim($redisitem["ip"]) && $redisitem["port"] > 0) {
+                        $key = $redisitem["ip"] . "_" . $redisitem["port"];
+                        try {
+                            //connecte redis
+                            if (!isset($_redisObj[$key])) {
+                                //if not connect
+                                $_redisObj[$key] = new \Redis();
+                                $_redisObj[$key]->connect($redisitem["ip"], $redisitem["port"]);
+                            }
+
+                            //get register node server
+                            $server_list = $_redisObj[$key]->smembers("dora.serverlist");
+                            if ($server_list) {
+                                foreach ($server_list as $sitem) {
+                                    $info = json_decode($sitem, true);
+                                    //decode success
+                                    if ($info) {
+                                        //get lsta report time
+                                        $lasttimekey = "dora.servertime." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
+                                        $lastupdatetime = $_redisObj[$key]->get($lasttimekey);
+
+                                        //timeout ignore
+                                        if (time() - $lastupdatetime > 20) {
+                                            continue;
+                                        }
+
+                                        if (is_array($info["group"])) {
+                                            foreach ($info["group"] as $groupname) {
+                                                $clientkey = $info["node"]["ip"] . "_" . $info["node"]["port"];
+                                                $server_list_result[$groupname][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
+                                                $server_list_result[$groupname][$clientkey]["updatetime"] = $lastupdatetime;
+                                            }
+                                        }
+                                        //foreach group and record this info
+                                    }//decode info if
+                                }// foreach
+                            }//if got server list from redis
+
+                        } catch (\Exception $ex) {
+                            //var_dump($ex);
+                            $_redisObj[$key] = null;
+                            echo "get redis server error" . PHP_EOL;
                         }
-
-                        //get register node server
-                        $server_list = $_redisObj[$key]->smembers("dora.serverlist");
-                        if ($server_list) {
-                            foreach ($server_list as $sitem) {
-                                $info = json_decode($sitem, true);
-                                //decode success
-                                if ($info) {
-                                    //get lsta report time
-                                    $lasttimekey = "dora.servertime." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
-                                    $lastupdatetime = $_redisObj[$key]->get($lasttimekey);
-
-                                    //timeout ignore
-                                    if (time() - $lastupdatetime > 20) {
-                                        continue;
-                                    }
-                                    //foreach group and record this info
-                                    foreach ($info["group"] as $groupname) {
-                                        $clientkey = $info["node"]["ip"] . "_" . $info["node"]["port"];
-
-                                        $server_list_result[$groupname][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
-                                        $server_list_result[$groupname][$clientkey]["updatetime"] = $lastupdatetime;
-                                    }
-
-                                }//decode info if
-                            }// foreach
-                        }//if got server list from redis
-
-                    } catch (\Exception $ex) {
-                        //var_dump($ex);
-                        $_redisObj[$key] = null;
-                        echo "get redis server error" . PHP_EOL;
                     }
                 }
-            }
 
-            if (count($server_list_result) > 0) {
+                if (count($server_list_result) > 0) {
 
-                $configString = var_export($server_list_result, true);
-                $ret = file_put_contents($this->_config["export_path"], "<?php" . PHP_EOL . "//This is generaled by client monitor" . PHP_EOL . "return " . $configString . ";");
-                if (!$ret) {
-                    echo "Error save the config to file..." . PHP_EOL;
+                    $configString = var_export($server_list_result, true);
+                    $ret = file_put_contents($this->_config["export_path"], "<?php" . PHP_EOL . "//This is generaled by client monitor" . PHP_EOL . "return " . $configString . ";");
+                    if (!$ret) {
+                        echo "Error save the config to file..." . PHP_EOL;
+                    } else {
+                        echo "General config file to:" . $this->_config["export_path"] . PHP_EOL;
+                    }
                 } else {
-                    echo "General config file to:" . $this->_config["export_path"] . PHP_EOL;
+                    echo "Error there is no Config get..." . PHP_EOL;
                 }
-            } else {
-                echo "Error there is no Config get..." . PHP_EOL;
-            }
 
-            //sleep 10 sec
-            sleep(10);
-        }
+                //sleep 10 sec
+                sleep(10);
+            }
+        }));
     }
 
-    public function __construct($ip = "0.0.0.0", $port = 9569, $Config = array())
+    public function __construct($ip = "0.0.0.0", $port = 9569, $config = array())
     {
-
         //record ip:port
         $this->_ip = $ip;
         $this->_port = $port;
@@ -132,29 +137,20 @@ class Monitor
         echo "Start Init Server udp://" . $ip . ":" . $port . PHP_EOL;
 
         //store the list of redis
-        $this->_config["redis"] = $Config["Discovery"];
+        $this->_config["redis"] = $config["discovery"];
 
         //store the avaliable node list to this config file
-        $this->_config["export_path"] = $Config["Config"];
+        $this->_config["export_path"] = $config["config"];
 
         //log monitor path
-        $this->_config["log_path"] = $Config["Log"];
+        $this->_config["log_path"] = $config["log"];
 
-        //use this for generalConfig by cycle
-        if (count($this->_config["export_path"]) > 0) {
-            echo "Setup The Service Discovery Config and Process...Start" . PHP_EOL;
-            $process = new \swoole_process(array($this, "generalConfig"));
-            $this->_server->addProcess($process);
-        }
+        $this->discovery($this->_config["redis"]);
+    }
 
-        //start server
-        $ret = $this->_server->start();
-        if ($ret) {
-            echo "Server Start Success..." . PHP_EOL;
-        } else {
-            echo "Server Start Fail...Exit" . PHP_EOL;
-            exit;
-        }
+    public function start()
+    {
+        $this->_server->start();
     }
 
     public function onPacket(\swoole_server $server, $data, $client_info)

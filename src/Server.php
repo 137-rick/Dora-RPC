@@ -8,84 +8,67 @@ namespace DoraRPC;
  */
 abstract class Server
 {
+    const MASTER_PID = './dorarpc.pid';
+    const MANAGER_PID = './dorarpcmanager.pid';
 
     private $tcpserver = null;
     private $server = null;
     private $taskInfo = array();
-
-    private $reportConfig = array();
 
     private $serverIP;
     private $serverPort;
 
     private $monitorProcess = null;
 
-    private $groupConfig;
+    protected $httpConfig = array(
+        'dispatch_mode' => 3,
 
-    //for extends class overwrite default config
-    //用于继承类覆盖默认配置
-    protected $externalConfig = array();
-    protected $externalHttpConfig = array();
+        'package_max_length' => 2097152, // 1024 * 1024 * 2,
+        'buffer_output_size' => 3145728, //1024 * 1024 * 3,
+        'pipe_buffer_size' => 33554432, //1024 * 1024 * 32,
+        'open_tcp_nodelay' => 1,
+
+        'heartbeat_check_interval' => 5,
+        'heartbeat_idle_time' => 10,
+        'open_cpu_affinity' => 1,
+
+        'reactor_num' => 32,//建议设置为CPU核数 x 2
+        'worker_num' => 40,
+        'task_worker_num' => 20,//生产环境请加大，建议1000
+
+        'max_request' => 0, //必须设置为0，否则会导致并发任务超时,don't change this number
+        'task_max_request' => 4000,
+
+        'backlog' => 3000,
+        'log_file' => '/tmp/sw_server.log',//swoole 系统日志，任何代码内echo都会在这里输出
+        'task_tmpdir' => '/tmp/swtasktmp/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
+    );
+
+    protected $tcpConfig = array(
+        'open_length_check' => 1,
+        'package_length_type' => 'N',
+        'package_length_offset' => 0,
+        'package_body_offset' => 4,
+
+        'package_max_length' => 2097152, // 1024 * 1024 * 2,
+        'buffer_output_size' => 3145728, //1024 * 1024 * 3,
+        'pipe_buffer_size' => 33554432, // 1024 * 1024 * 32,
+
+        'open_tcp_nodelay' => 1,
+
+        'backlog' => 3000,
+    );
 
     abstract public function initServer($server);
 
-    final public function __construct($ip = "0.0.0.0", $port = 9567, $httpport = 9566, $groupConfig = array(), $reportConfig = array())
+    final public function __construct($ip = "0.0.0.0", $port = 9567, $httpport = 9566)
     {
         $this->server = new \swoole_http_server($ip, $httpport);
+        //tcp server
         $this->tcpserver = $this->server->addListener($ip, $port, \SWOOLE_TCP);
-        $httpconfig = array(
-            'dispatch_mode' => 3,
-
-            'package_max_length' => 1024 * 1024 * 2,
-            'buffer_output_size' => 1024 * 1024 * 3,
-            'pipe_buffer_size' => 1024 * 1024 * 32,
-            'open_tcp_nodelay' => 1,
-
-            'heartbeat_check_interval' => 5,
-            'heartbeat_idle_time' => 10,
-            'open_cpu_affinity' => 1,
-
-            'reactor_num' => 32,
-            'worker_num' => 40,
-            'task_worker_num' => 20,
-
-            'max_request' => 0, //必须设置为0否则并发任务容易丢,don't change this number
-            'task_max_request' => 4000,
-
-            'backlog' => 3000,
-            'log_file' => '/tmp/sw_server.log',
-            'task_tmpdir' => '/tmp/swtasktmp/',
-
-            'daemonize' => 1,
-        );
-
-        $tcpconfig = array(
-            'open_length_check' => 1,
-            'package_length_type' => 'N',
-            'package_length_offset' => 0,
-            'package_body_offset' => 4,
-
-            'package_max_length' => 1024 * 1024 * 2,
-            'buffer_output_size' => 1024 * 1024 * 3,
-            'pipe_buffer_size' => 1024 * 1024 * 32,
-
-            'open_tcp_nodelay' => 1,
-
-            'backlog' => 3000,
-        );
-
-        //merge config
-        if (!empty($this->externalConfig)) {
-            $httpconfig = array_merge($httpconfig, $this->externalHttpConfig);
-            $tcpconfig = array_merge($tcpconfig, $this->externalConfig);
-        }
-
-        //init tcp server
-        $this->tcpserver->set($tcpconfig);
+        //tcp只使用这个事件
         $this->tcpserver->on('Receive', array($this, 'onReceive'));
-
         //init http server
-        $this->server->set($httpconfig);
         $this->server->on('Start', array($this, 'onStart'));
         $this->server->on('ManagerStart', array($this, 'onManagerStart'));
 
@@ -101,65 +84,89 @@ abstract class Server
         //store current ip port
         $this->serverIP = $ip;
         $this->serverPort = $port;
-
-        //store current server group
-        $this->groupConfig = $groupConfig;
-        //if user set the report config will start report
-        if (count($reportConfig) > 0) {
-            echo "Found Report Config... Start Report Process" . PHP_EOL;
-            $this->reportConfig = $reportConfig;
-            //use this report the state
-            $this->monitorProcess = new \swoole_process(array($this, "monitorReport"));
-            $this->server->addProcess($this->monitorProcess);
-        }
-
-        $this->server->start();
     }
 
-    //////////////////////////////server monitor start/////////////////////////////
-    //server discovery report
-    final public function monitorReport(\swoole_process $process)
+    /**
+     * Configuration Server.必须在start之前执行
+     *
+     * @param array $config
+     * @return $this
+     */
+    public function configure(array $config)
     {
-        swoole_set_process_name("doraProcess|Monitor");
-
-        //file_put_contents("./monitor.pid", getmypid());
-
-        static $_redisObj;
-
-        while (true) {
-            //register group and server
-            $redisconfig = $this->reportConfig;
-            //register this node server info to redis
-            foreach ($redisconfig as $redisitem) {
-
-                //validate redis ip and port
-                if (trim($redisitem["ip"]) && $redisitem["port"] > 0) {
-                    $key = $redisitem["ip"] . "_" . $redisitem["port"];
-                    try {
-                        if (!isset($_redisObj[$key])) {
-                            //if not connect
-                            $_redisObj[$key] = new \Redis();
-                            $_redisObj[$key]->connect($redisitem["ip"], $redisitem["port"]);
-                        }
-                        // 上报的服务器IP
-                        $reportServerIP = $this->getReportServerIP();
-                        //register this server
-                        $_redisObj[$key]->sadd("dora.serverlist", json_encode(array("node" => array("ip" => $reportServerIP, "port" => $this->serverPort), "group" => $this->groupConfig["list"])));
-                        //set time out
-                        $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $this->serverPort . ".time", time());
-
-                        //echo "Reported Service Discovery:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
-
-                    } catch (\Exception $ex) {
-                        $_redisObj[$key] = null;
-                        echo "connect to Service Discovery error:" . $redisitem["ip"] . ":" . $redisitem["port"] . PHP_EOL;
-                    }
-                }
-            }
-
-            sleep(10);
-            //sleep 10 sec and report again
+        if (isset($config['http'])) {
+            $this->httpConfig = array_merge($this->httpConfig, $config['http']);
         }
+
+        if (isset($config['tcp'])) {
+            $this->tcpConfig = array_merge($this->tcpConfig, $config['tcp']);
+        }
+        return $this;
+    }
+
+    /**
+     * 启动服务发现服务
+     * @param array $group
+     * @param array $report
+     */
+    public function discovery(array $group, array $report)
+    {
+        $self = $this;
+        $this->monitorProcess = new \swoole_process(function () use ($group, $report, $self) {
+            swoole_set_process_name("doraProcess|Monitor");
+            while (true) {
+                foreach ($report as $discovery) {
+                    foreach ($discovery as $config) {
+                        if (trim($config["ip"]) && $config["port"] > 0) {
+                            $key = $config["ip"] . "_" . $config["port"];
+                            try {
+                                if (!isset($_redisObj[$key])) {
+                                    //if not connect
+                                    $_redisObj[$key] = new \Redis();
+                                    $_redisObj[$key]->connect($config["ip"], $config["port"]);
+                                }
+                                // 上报的服务器IP
+                                $reportServerIP = $self->getLocalIp();
+                                //register this server
+                                $_redisObj[$key]->sadd("dora.serverlist", json_encode(array(
+                                    "node" => array(
+                                        "ip" => $reportServerIP,
+                                        "port" => $self->serverPort
+                                    ),
+                                    "group" => $group,
+                                )));
+                                //set time out
+                                $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $self->serverPort . ".time", time());
+                                echo "Reported Service Discovery:" . $config["ip"] . ":" . $config["port"] . PHP_EOL;
+
+                            } catch (\Exception $ex) {
+                                $_redisObj[$key] = null;
+                                echo "connect to Service Discovery error:" . $config["ip"] . ":" . $config["port"] . PHP_EOL;
+                            }
+                        }
+
+                        sleep(10);
+                        //sleep 10 sec and report again
+                    }// config foreach
+                }//discover foreach
+            }
+        });
+        $this->server->addProcess($this->monitorProcess);
+
+    }
+
+    /**
+     * Start Server.
+     *
+     * @return void;
+     */
+    public function start()
+    {
+        $this->server->set($this->httpConfig);
+
+        $this->tcpserver->set($this->tcpConfig);
+
+        $this->server->start();
     }
 
     //http request process
@@ -175,7 +182,7 @@ abstract class Server
             $response->end(json_encode(Packet::packFormat("Parameter was not set or wrong", 100003)));
             return;
         }
-        //get the parameter
+        //get the post parameter
         $params = $request->post;
         $params = json_decode($params["params"], true);
 
@@ -227,6 +234,7 @@ abstract class Server
                     return;
                 }
                 if ($params["api"]["cmd"]["name"] == "reloadTask") {
+                    echo "get CMD Reload The Task..." . PHP_EOL;
                     $pack = Packet::packFormat("OK", 0, array());
                     $this->server->reload(true);
                     $pack["guid"] = $task["guid"];
@@ -251,8 +259,8 @@ abstract class Server
         echo "ManagerPid={$serv->master_pid}\n";
         echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
 
-        file_put_contents("./dorarpc.pid", $serv->master_pid);
-        file_put_contents("./dorarpcmanager.pid", $serv->manager_pid);
+        file_put_contents(static::MASTER_PID, $serv->master_pid);
+        file_put_contents(static::MANAGER_PID, $serv->manager_pid);
 
     }
 
@@ -461,10 +469,11 @@ abstract class Server
     }
 
     /**
-     * 获取上报的服务器IP
+     * 获取当前服务器ip，用于服务发现上报IP
+     *
      * @return string
      */
-    protected function getReportServerIP()
+    protected function getLocalIp()
     {
         if ($this->serverIP == '0.0.0.0' || $this->serverIP == '127.0.0.1') {
             $serverIps = swoole_get_local_ip();
@@ -482,6 +491,7 @@ abstract class Server
                 }
             }
         }
+
         return $this->serverIP;
     }
 
@@ -539,6 +549,7 @@ abstract class Server
 
                     return true;
                 } else {
+                    //multi call task
                     //not finished
                     //waiting other result
                     return true;
@@ -570,13 +581,14 @@ abstract class Server
 
                     return true;
                 } else {
+                    //multi call task
                     //not finished
                     //waiting other result
                     return true;
                 }
                 break;
             default:
-
+                //
                 return true;
                 break;
         }
@@ -615,6 +627,7 @@ abstract class Server
 
                     return true;
                 } else {
+                    //multi call task
                     //not finished
                     //waiting other result
                     return true;
