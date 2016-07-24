@@ -66,29 +66,29 @@ class Client
     public function changeMode($param)
     {
         switch ($param["type"]) {
-        case 1:
-            if ($param["group"] == "") {
+            case 1:
+                if ($param["group"] == "") {
+                    throw new \Exception("change mode parameter is wrong", -1);
+                }
+                $this->connectMode = 1;
+                $this->connectGroup = $param["group"];
+                $this->connectIp = "";
+                $this->connectPort = "";
+                $this->currentClientKey = "";
+                break;
+            case 2:
+                if ($param["ip"] == "" || $param["port"] == "") {
+                    throw new \Exception("change mode parameter is wrong", -1);
+                }
+                $this->connectMode = 2;
+                $this->connectGroup = "default";
+                $this->connectIp = $param["ip"];
+                $this->connectPort = $param["port"];
+                $this->currentClientKey = "";
+                break;
+            default:
                 throw new \Exception("change mode parameter is wrong", -1);
-            }
-            $this->connectMode = 1;
-            $this->connectGroup = $param["group"];
-            $this->connectIp = "";
-            $this->connectPort = "";
-            $this->currentClientKey = "";
-            break;
-        case 2:
-            if ($param["ip"] == "" || $param["port"] == "") {
-                throw new \Exception("change mode parameter is wrong", -1);
-            }
-            $this->connectMode = 2;
-            $this->connectGroup = "default";
-            $this->connectIp = $param["ip"];
-            $this->connectPort = $param["port"];
-            $this->currentClientKey = "";
-            break;
-        default:
-            throw new \Exception("change mode parameter is wrong", -1);
-            break;
+                break;
         }
     }
 
@@ -99,16 +99,16 @@ class Client
      */
     public function getConnectMode()
     {
-        switch($this->connectMode) {
-        case 1:
-            return array("type" => 1, "group" => $this->connectGroup, "ip" => $this->connectIp, "port" => $this->connectPort);
-            break;
-        case 2:
-            return array("type" => 2, "group" => "", "ip" => $this->connectIp, "port" => $this->connectPort);
-            break;
-        default:
-            throw new \Exception("current connect mode is unknow", -1);
-            break;
+        switch ($this->connectMode) {
+            case 1:
+                return array("type" => 1, "group" => $this->connectGroup, "ip" => $this->connectIp, "port" => $this->connectPort);
+                break;
+            case 2:
+                return array("type" => 2, "group" => "", "ip" => $this->connectIp, "port" => $this->connectPort);
+                break;
+            default:
+                throw new \Exception("current connect mode is unknow", -1);
+                break;
         }
     }
 
@@ -151,25 +151,25 @@ class Client
 
         //if not spc will random
         switch ($this->connectMode) {
-        case 1:
-            $key = $this->getConfigObjKey();
-            $clientKey = $this->serverConfig[$this->connectGroup][$key]["ip"] . "_" . $this->serverConfig[$this->connectGroup][$key]["port"];
-            //set the current client key
-            $this->currentClientKey = $clientKey;
-            $connectHost = $this->serverConfig[$this->connectGroup][$key]["ip"];
-            $connectPort = $this->serverConfig[$this->connectGroup][$key]["port"];
-            break;
-        case 2:
-            //using spec
-            $clientKey = trim($this->connectIp) . "_" . trim($this->connectPort);
-            //set the current client key
-            $this->currentClientKey = $clientKey;
-            $connectHost = $this->connectIp;
-            $connectPort = $this->connectPort;
-            break;
-        default:
-            throw new \Exception("current connect mode is unknow", -1);
-            break;
+            case 1:
+                $key = $this->getConfigObjKey();
+                $clientKey = $this->serverConfig[$this->connectGroup][$key]["ip"] . "_" . $this->serverConfig[$this->connectGroup][$key]["port"];
+                //set the current client key
+                $this->currentClientKey = $clientKey;
+                $connectHost = $this->serverConfig[$this->connectGroup][$key]["ip"];
+                $connectPort = $this->serverConfig[$this->connectGroup][$key]["port"];
+                break;
+            case 2:
+                //using spec
+                $clientKey = trim($this->connectIp) . "_" . trim($this->connectPort);
+                //set the current client key
+                $this->currentClientKey = $clientKey;
+                $connectHost = $this->connectIp;
+                $connectPort = $this->connectPort;
+                break;
+            default:
+                throw new \Exception("current connect mode is unknow", -1);
+                break;
         }
 
         if (!isset(self::$client[$clientKey])) {
@@ -327,18 +327,18 @@ class Client
         );
 
         switch ($mode) {
-        case DoraConst::SW_MODE_WAITRESULT:
-            $packet["type"] = DoraConst::SW_MODE_WAITRESULT_SINGLE;
-            break;
-        case DoraConst::SW_MODE_NORESULT:
-            $packet["type"] = DoraConst::SW_MODE_NORESULT_SINGLE;
-            break;
-        case DoraConst::SW_MODE_ASYNCRESULT:
-            $packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_SINGLE;
-            break;
-        default:
-            throw new \Exception("unknow mode have been set", 100099);
-            break;
+            case DoraConst::SW_MODE_WAITRESULT:
+                $packet["type"] = DoraConst::SW_MODE_WAITRESULT_SINGLE;
+                break;
+            case DoraConst::SW_MODE_NORESULT:
+                $packet["type"] = DoraConst::SW_MODE_NORESULT_SINGLE;
+                break;
+            case DoraConst::SW_MODE_ASYNCRESULT:
+                $packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_SINGLE;
+                break;
+            default:
+                throw new \Exception("unknow mode have been set", 100099);
+                break;
         }
 
         $sendData = Packet::packEncode($packet);
@@ -383,18 +383,18 @@ class Client
         );
 
         switch ($mode) {
-        case DoraConst::SW_MODE_WAITRESULT:
-            $packet["type"] = DoraConst::SW_MODE_WAITRESULT_MULTI;
-            break;
-        case DoraConst::SW_MODE_NORESULT:
-            $packet["type"] = DoraConst::SW_MODE_NORESULT_MULTI;
-            break;
-        case DoraConst::SW_MODE_ASYNCRESULT:
-            $packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_MULTI;
-            break;
-        default:
-            throw new \Exception("unknow mode have been set", 100099);
-            break;
+            case DoraConst::SW_MODE_WAITRESULT:
+                $packet["type"] = DoraConst::SW_MODE_WAITRESULT_MULTI;
+                break;
+            case DoraConst::SW_MODE_NORESULT:
+                $packet["type"] = DoraConst::SW_MODE_NORESULT_MULTI;
+                break;
+            case DoraConst::SW_MODE_ASYNCRESULT:
+                $packet["type"] = DoraConst::SW_MODE_ASYNCRESULT_MULTI;
+                break;
+            default:
+                throw new \Exception("unknow mode have been set", 100099);
+                break;
         }
 
         $sendData = Packet::packEncode($packet);
@@ -474,7 +474,7 @@ class Client
                     // this data was not we want
                     //it's may the async result
                     //when the guid on the asynclist and have isresult =1  on data is async result
-                    //when the guid on the asynclist not have isresult field ond data is firsy success deploy msg
+                    //when the guid on the asynclist not have isresult field ond data is first success deploy msg
 
                     if (isset(self::$asynclist[$data["data"]["guid"]]) && isset($data["data"]["isresult"]) && $data["data"]["isresult"] == 1) {
 

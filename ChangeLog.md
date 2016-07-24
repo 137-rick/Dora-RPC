@@ -1,9 +1,7 @@
 ##更新历史(ChangeLog)
 
-> * 2016-07-16 拆分服务器配置, 新增 configure, start 方法,
-
 ---------
-
+> * 2016-07-24 黄总支援了帮忙改进了配置的传递方式及服务启动方式
 > * 2016-06-11 增加group连接方式，将原有groupclient方式整合到client内，不再提供非分组配置客户端
 > * 2016-06-08 增加新的异步调用方式，并且修复低几率调用参数覆盖问题，groupclient还未更新，请稍后
 > * 2016-06-06 客户端增加分组配置客户端，可以用客户端调用多组隔离开的业务。另外之前加了服务发现在test/demomonitor .去掉unique函数服务性能翻倍,gzcompress包压缩
@@ -16,6 +14,7 @@
 > * 2015-06-24 客户端服务端都增加了SW_DATASIGEN_FLAG及SW_DATASIGEN_SALT参数，如果开启则支持消息数据签名，可以强化安全性，打开会有一点性能损耗，建议SALT每个人自定义一个
 
 ----------
+> * 2016-07-24 JanHuang optimize the config define,and server startup
 > * 2016-06-11 remove the groupclient.php and combine groupclient function to the client.php now only support group config client
 > * 2016-06-08 add new async result get and fixed the running stack overwrite bug，groupclient was not update under construction
 > * 2016-06-06 client have new group config client that for test/demomonitor .(and service discovery demomonitor)。performance 2X when remove unique。gzcompress packet compress

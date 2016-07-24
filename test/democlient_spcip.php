@@ -15,7 +15,7 @@ $config = include("client.conf.php");
 
 //define the mode
 $mode = array("type" => 2, "ip" => "127.0.0.1", "port" => 9567);
-
+//这里会使用127.0.0.1指定的配置，而非include内的配置
 $obj = new \DoraRPC\Client($config);
 $obj->changeMode($mode);
 

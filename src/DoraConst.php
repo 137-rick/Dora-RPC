@@ -25,6 +25,8 @@ class DoraConst
 
     //timeout limit when recive second
     //接收数据的超时时长，超过了就会断开 单位秒
+    //目前只能做到统一超时，单个超时目前由于异步取回结果导致不准
+    //可以考虑swoole_select方式制作单个请求设定超时机制
     const SW_RECIVE_TIMEOUT = 3.0;
 
     //a flag to sure check the crc32

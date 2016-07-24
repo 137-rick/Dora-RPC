@@ -18,7 +18,7 @@ class Server extends \DoraRPC\Server
         //return the result 使用return返回处理结果
         //throw new Exception("asbddddfds",1231);
 
-        return array("hehe" => "ohyes");
+        return array("hehe" => "ohyes123");
     }
 
     function initTask($server, $worker_id)
@@ -32,6 +32,9 @@ $server = new Server("0.0.0.0", 9567, 9566);
 
 $server->configure(array(
     'tcp' => array(
+
+    ),
+    'http' => array(
         //to improve the accept performance ,suggest the number of cpu X 2
         //如果想提高请求接收能力，更改这个，推荐cpu个数x2
         'reactor_num' => 16,
@@ -49,27 +52,27 @@ $server->configure(array(
         'log_file' => '/tmp/sw_server.log',
 
         'task_tmpdir' => '/tmp/swtasktmp/',
-    ),
-    'http' => array(
-        'daemonize' => false,
     )
 ));
 
 //redis for service discovery register
 //when you on product env please prepare more redis to registe service for high available
-$server->discovery(array(
-    'group1', 'group2'
-), array(
+$server->discovery(
     array(
-        array(//first reporter
-            "ip" => "127.0.0.1",
-            "port" => "6379",
-        ),
-        array(//next reporter
-            "ip" => "127.0.0.1",
-            "port" => "6379",
-        ),
+        'group1', 'group2'
     ),
-));
+    array(
+
+        array(
+            array(//first reporter
+                "ip" => "127.0.0.1",
+                "port" => "6379",
+            ),
+            array(//next reporter
+                "ip" => "127.0.0.1",
+                "port" => "6379",
+            ),
+        ),
+    ));
 
 $server->start();

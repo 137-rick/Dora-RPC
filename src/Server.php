@@ -32,16 +32,16 @@ abstract class Server
         'heartbeat_idle_time' => 10,
         'open_cpu_affinity' => 1,
 
-        'reactor_num' => 32,
+        'reactor_num' => 32,//建议设置为CPU核数 x 2
         'worker_num' => 40,
-        'task_worker_num' => 20,
+        'task_worker_num' => 20,//生产环境请加大，建议1000
 
-        'max_request' => 0, //必须设置为0否则并发任务容易丢,don't change this number
+        'max_request' => 0, //必须设置为0，否则会导致并发任务超时,don't change this number
         'task_max_request' => 4000,
 
         'backlog' => 3000,
-        'log_file' => '/tmp/sw_server.log',
-        'task_tmpdir' => '/tmp/swtasktmp/',
+        'log_file' => '/tmp/sw_server.log',//swoole 系统日志，任何代码内echo都会在这里输出
+        'task_tmpdir' => '/tmp/swtasktmp/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
     );
 
     protected $tcpConfig = array(
@@ -64,8 +64,9 @@ abstract class Server
     final public function __construct($ip = "0.0.0.0", $port = 9567, $httpport = 9566)
     {
         $this->server = new \swoole_http_server($ip, $httpport);
+        //tcp server
         $this->tcpserver = $this->server->addListener($ip, $port, \SWOOLE_TCP);
-
+        //tcp只使用这个事件
         $this->tcpserver->on('Receive', array($this, 'onReceive'));
         //init http server
         $this->server->on('Start', array($this, 'onStart'));
@@ -86,7 +87,7 @@ abstract class Server
     }
 
     /**
-     * Configuration Server.
+     * Configuration Server.必须在start之前执行
      *
      * @param array $config
      * @return $this
@@ -104,18 +105,18 @@ abstract class Server
     }
 
     /**
-     *
+     * 启动服务发现服务
      * @param array $group
      * @param array $report
      */
     public function discovery(array $group, array $report)
     {
         $self = $this;
-        foreach ($report as $discovery) {
-            foreach ($discovery as $config) {
-                $this->monitorProcess = new \swoole_process(function () use ($config, $group, $self) {
-                    swoole_set_process_name("doraProcess|Monitor");
-                    while (true) {
+        $this->monitorProcess = new \swoole_process(function () use ($group, $report, $self) {
+            swoole_set_process_name("doraProcess|Monitor");
+            while (true) {
+                foreach ($report as $discovery) {
+                    foreach ($discovery as $config) {
                         if (trim($config["ip"]) && $config["port"] > 0) {
                             $key = $config["ip"] . "_" . $config["port"];
                             try {
@@ -146,11 +147,12 @@ abstract class Server
 
                         sleep(10);
                         //sleep 10 sec and report again
-                    }
-                });
-                $this->server->addProcess($this->monitorProcess);
+                    }// config foreach
+                }//discover foreach
             }
-        }
+        });
+        $this->server->addProcess($this->monitorProcess);
+
     }
 
     /**
@@ -180,7 +182,7 @@ abstract class Server
             $response->end(json_encode(Packet::packFormat("Parameter was not set or wrong", 100003)));
             return;
         }
-        //get the parameter
+        //get the post parameter
         $params = $request->post;
         $params = json_decode($params["params"], true);
 
@@ -232,6 +234,7 @@ abstract class Server
                     return;
                 }
                 if ($params["api"]["cmd"]["name"] == "reloadTask") {
+                    echo "get CMD Reload The Task..." . PHP_EOL;
                     $pack = Packet::packFormat("OK", 0, array());
                     $this->server->reload(true);
                     $pack["guid"] = $task["guid"];
@@ -466,7 +469,7 @@ abstract class Server
     }
 
     /**
-     * 获取上报的服务器IP
+     * 获取当前服务器ip，用于服务发现上报IP
      *
      * @return string
      */
@@ -546,6 +549,7 @@ abstract class Server
 
                     return true;
                 } else {
+                    //multi call task
                     //not finished
                     //waiting other result
                     return true;
@@ -577,13 +581,14 @@ abstract class Server
 
                     return true;
                 } else {
+                    //multi call task
                     //not finished
                     //waiting other result
                     return true;
                 }
                 break;
             default:
-
+                //
                 return true;
                 break;
         }
@@ -622,6 +627,7 @@ abstract class Server
 
                     return true;
                 } else {
+                    //multi call task
                     //not finished
                     //waiting other result
                     return true;

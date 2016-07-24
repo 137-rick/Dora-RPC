@@ -1,3 +1,4 @@
+# 这个只是我自己测试的改配置脚本(有错误)，线上根据需要自行配制，具体参考swoole官方文档
 ulimit -n 65535
 sysctl net.unix.max_dgram_qlen=100
 sysctl net.core.wmem_default=8388608
