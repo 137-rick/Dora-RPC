@@ -42,6 +42,7 @@ abstract class Server
         'backlog' => 3000,
         'log_file' => '/tmp/sw_server.log',//swoole 系统日志，任何代码内echo都会在这里输出
         'task_tmpdir' => '/tmp/swtasktmp/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
+        'pid_path' => '/tmp/',
     );
 
     protected $tcpConfig = array(
@@ -258,8 +259,10 @@ abstract class Server
         echo "ManagerPid={$serv->master_pid}\n";
         echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
 
-        file_put_contents(static::MASTER_PID, $serv->master_pid);
-        file_put_contents(static::MANAGER_PID, $serv->manager_pid);
+        $pidPath = rtrim($this->httpConfig['pid_path'], '/') . '/';
+
+        file_put_contents($pidPath . static::MASTER_PID, $serv->master_pid);
+        file_put_contents($pidPath . static::MANAGER_PID, $serv->manager_pid);
 
     }
 
