@@ -97,7 +97,9 @@ abstract class Server
     public function configure(array $config)
     {
         if (isset($config['http'])) {
-            $config['http']['response_header'] = array_merge($this->httpConfig['response_header'], $config['http']['response_header']);
+            if (isset($config['http']['response_header'])) {
+                $config['http']['response_header'] = array_merge($this->httpConfig['response_header'], $config['http']['response_header']);
+            }
 
             $this->httpConfig = array_merge($this->httpConfig, $config['http']);
         }
