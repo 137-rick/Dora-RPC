@@ -42,6 +42,7 @@ abstract class Server
         'backlog' => 3000,
         'log_file' => '/tmp/sw_server.log',//swoole 系统日志，任何代码内echo都会在这里输出
         'task_tmpdir' => '/tmp/swtasktmp/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
+        'pid_path' => '/tmp/',
     );
 
     protected $tcpConfig = array(
@@ -113,8 +114,11 @@ abstract class Server
     {
         $self = $this;
         $this->monitorProcess = new \swoole_process(function () use ($group, $report, $self) {
-            swoole_set_process_name("doraProcess|Monitor");
             while (true) {
+                // 上报的服务器IP
+                $reportServerIP = $self->getLocalIp();
+                swoole_set_process_name("dora: monitor (".$reportServerIP.")");
+
                 foreach ($report as $discovery) {
                     foreach ($discovery as $config) {
                         if (trim($config["ip"]) && $config["port"] > 0) {
@@ -125,8 +129,6 @@ abstract class Server
                                     $_redisObj[$key] = new \Redis();
                                     $_redisObj[$key]->connect($config["ip"], $config["port"]);
                                 }
-                                // 上报的服务器IP
-                                $reportServerIP = $self->getLocalIp();
                                 //register this server
                                 $_redisObj[$key]->sadd("dora.serverlist", json_encode(array(
                                     "node" => array(
@@ -252,21 +254,23 @@ abstract class Server
     //application server first start
     final public function onStart(\swoole_server $serv)
     {
-        swoole_set_process_name("dora|Master");
+        swoole_set_process_name("dora: master");
 
         echo "MasterPid={$serv->master_pid}\n";
         echo "ManagerPid={$serv->master_pid}\n";
         echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
 
-        file_put_contents(static::MASTER_PID, $serv->master_pid);
-        file_put_contents(static::MANAGER_PID, $serv->manager_pid);
+        $pidPath = rtrim($this->httpConfig['pid_path'], '/') . '/';
+
+        file_put_contents($pidPath . static::MASTER_PID, $serv->master_pid);
+        file_put_contents($pidPath . static::MANAGER_PID, $serv->manager_pid);
 
     }
 
     //application server first start
     final public function onManagerStart(\swoole_server $serv)
     {
-        swoole_set_process_name("dora|Manager");
+        swoole_set_process_name("dora: manager");
     }
 
     //worker and task init
@@ -275,10 +279,10 @@ abstract class Server
         $istask = $server->taskworker;
         if (!$istask) {
             //worker
-            swoole_set_process_name("doraWorker|{$worker_id}");
+            swoole_set_process_name("dora: worker {$worker_id}");
         } else {
             //task
-            swoole_set_process_name("doraTask|{$worker_id}");
+            swoole_set_process_name("dora: task {$worker_id}");
             $this->initTask($server, $worker_id);
         }
 
@@ -441,7 +445,7 @@ abstract class Server
 
     final public function onTask($serv, $task_id, $from_id, $data)
     {
-//        swoole_set_process_name("doraTask|{$task_id}_{$from_id}|" . $data["api"]["name"] . "");
+//        swoole_set_process_name("dora: task {$task_id}_{$from_id}|" . $data["api"]["name"] . "");
         try {
             $data["result"] = Packet::packFormat("OK", 0, $this->doWork($data));
         } catch (\Exception $e) {

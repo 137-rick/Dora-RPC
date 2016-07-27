@@ -17,51 +17,51 @@ class Monitor
 
         $this->_server->addProcess(new \swoole_process(function () use ($config, $self) {
 
-            swoole_set_process_name("php monitor service discovery");
+            swoole_set_process_name("dora: monitor service");
 
             static $_redisObj = array();
 
             while (true) {
                 //for result list
-                $server_list_result = array();
+                $serverListResult = array();
 
                 //get redis config
-                $redisconfig = $self->_config["redis"];
+                $redisConfig = $self->_config["redis"];
 
                 //connect all redis
-                foreach ($redisconfig as $redisitem) {
+                foreach ($redisConfig as $redisItem) {
                     //validate redis ip and port
-                    if (trim($redisitem["ip"]) && $redisitem["port"] > 0) {
-                        $key = $redisitem["ip"] . "_" . $redisitem["port"];
+                    if (trim($redisItem["ip"]) && $redisItem["port"] > 0) {
+                        $key = $redisItem["ip"] . "_" . $redisItem["port"];
                         try {
                             //connecte redis
                             if (!isset($_redisObj[$key])) {
                                 //if not connect
                                 $_redisObj[$key] = new \Redis();
-                                $_redisObj[$key]->connect($redisitem["ip"], $redisitem["port"]);
+                                $_redisObj[$key]->connect($redisItem["ip"], $redisItem["port"]);
                             }
 
                             //get register node server
-                            $server_list = $_redisObj[$key]->smembers("dora.serverlist");
-                            if ($server_list) {
-                                foreach ($server_list as $sitem) {
+                            $serverList = $_redisObj[$key]->smembers("dora.serverlist");
+                            if ($serverList) {
+                                foreach ($serverList as $sitem) {
                                     $info = json_decode($sitem, true);
                                     //decode success
                                     if ($info) {
-                                        //get lsta report time
-                                        $lasttimekey = "dora.servertime." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
-                                        $lastupdatetime = $_redisObj[$key]->get($lasttimekey);
+                                        //get last report time
+                                        $lastTimeKey = "dora.servertime." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
+                                        $lastUpdatTime = $_redisObj[$key]->get($lastTimeKey);
 
                                         //timeout ignore
-                                        if (time() - $lastupdatetime > 20) {
+                                        if (time() - $lastUpdatTime > 20) {
                                             continue;
                                         }
 
                                         if (is_array($info["group"])) {
                                             foreach ($info["group"] as $groupname) {
                                                 $clientkey = $info["node"]["ip"] . "_" . $info["node"]["port"];
-                                                $server_list_result[$groupname][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
-                                                $server_list_result[$groupname][$clientkey]["updatetime"] = $lastupdatetime;
+                                                $serverListResult[$groupname][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
+                                                $serverListResult[$groupname][$clientkey]["updatetime"] = $lastUpdatTime;
                                             }
                                         }
                                         //foreach group and record this info
@@ -77,9 +77,9 @@ class Monitor
                     }
                 }
 
-                if (count($server_list_result) > 0) {
+                if (count($serverListResult) > 0) {
 
-                    $configString = var_export($server_list_result, true);
+                    $configString = var_export($serverListResult, true);
                     $ret = file_put_contents($this->_config["export_path"], "<?php" . PHP_EOL . "//This is generaled by client monitor" . PHP_EOL . "return " . $configString . ";");
                     if (!$ret) {
                         echo "Error save the config to file..." . PHP_EOL;
