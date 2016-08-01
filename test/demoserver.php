@@ -52,6 +52,8 @@ $server->configure(array(
         'log_file' => '/tmp/sw_server.log',
 
         'task_tmpdir' => '/tmp/swtasktmp/',
+        // header key must uc_first
+        'response_header' => array('Aaa' => 'bbb')
     )
 ));
 

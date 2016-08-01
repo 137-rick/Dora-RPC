@@ -43,6 +43,7 @@ abstract class Server
         'log_file' => '/tmp/sw_server.log',//swoole 系统日志，任何代码内echo都会在这里输出
         'task_tmpdir' => '/tmp/swtasktmp/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
         'pid_path' => '/tmp/',
+        'response_header' => array('Content_Type'=>'application/json; charset=utf-8'),
     );
 
     protected $tcpConfig = array(
@@ -96,6 +97,10 @@ abstract class Server
     public function configure(array $config)
     {
         if (isset($config['http'])) {
+            if (isset($config['http']['response_header'])) {
+                $config['http']['response_header'] = array_merge($this->httpConfig['response_header'], $config['http']['response_header']);
+            }
+
             $this->httpConfig = array_merge($this->httpConfig, $config['http']);
         }
 
@@ -175,7 +180,9 @@ abstract class Server
     final public function onRequest(\swoole_http_request $request, \swoole_http_response $response)
     {
         //return the json
-        $response->header("Content-Type", "application/json; charset=utf-8");
+        foreach ($this->httpConfig['response_header'] as $k => $v) {
+            $response->header($k, $v);
+        }
         //forever http 200 ,when the error json code decide
         $response->status(200);
 
