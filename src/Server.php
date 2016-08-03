@@ -73,6 +73,7 @@ abstract class Server
         //init http server
         $this->server->on('Start', array($this, 'onStart'));
         $this->server->on('ManagerStart', array($this, 'onManagerStart'));
+        $this->server->on('ManagerStop', array($this, 'onManagerStop'));
 
         $this->server->on('Request', array($this, 'onRequest'));
         $this->server->on('WorkerStart', array($this, 'onWorkerStart'));
@@ -278,6 +279,12 @@ abstract class Server
     final public function onManagerStart(\swoole_server $serv)
     {
         swoole_set_process_name("dora: manager");
+    }
+
+    final public function onManagerStop(\swoole_server $serv)
+    {
+        echo "Manager Stop , shutdown server\n";
+        $serv->shutdown();
     }
 
     //worker and task init
