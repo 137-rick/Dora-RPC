@@ -190,7 +190,7 @@ class Client
                     $msg = "connect fail.check host dns.";
                     $errorCode = -1;
                 } else {
-                    $msg = socket_strerror($errorCode);
+                    $msg = \socket_strerror($errorCode);
                 }
 
                 if ($key !== "") {
@@ -440,7 +440,7 @@ class Client
                 $errorcode = -1;
                 $packet = Packet::packFormat($msg, $errorcode);
             } else {
-                $msg = socket_strerror($errorcode);
+                $msg = \socket_strerror($errorcode);
                 $packet = Packet::packFormat($msg, $errorcode);
             }
 
