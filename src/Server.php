@@ -265,7 +265,7 @@ abstract class Server
         swoole_set_process_name("dora: master");
 
         echo "MasterPid={$serv->master_pid}\n";
-        echo "ManagerPid={$serv->master_pid}\n";
+        echo "ManagerPid={$serv->manager_pid}\n";
         echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
 
         $pidPath = rtrim($this->httpConfig['pid_path'], '/') . '/';
