@@ -433,7 +433,7 @@ class Client
             $errorcode = $client->errCode;
 
             //destroy error client obj to make reconncet
-            self::$client[$this->currentClientKey]->close();
+            //self::$client[$this->currentClientKey]->close();
             unset(self::$client[$this->currentClientKey]);
             // mark the current connection cannot be used, try another channel
             $this->serverConfigBlock[$this->connectGroup][$this->currentClientKey] = 1;
