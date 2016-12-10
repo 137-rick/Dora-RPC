@@ -32,17 +32,18 @@ abstract class Server
         'heartbeat_idle_time' => 10,
         'open_cpu_affinity' => 1,
 
-        'reactor_num' => 32,//建议设置为CPU核数 x 2
+        //'reactor_num' => 32,//建议设置为CPU核数 x 2 新版会自动设置 cpu个数
         'worker_num' => 40,
         'task_worker_num' => 20,//生产环境请加大，建议1000
 
         'max_request' => 0, //必须设置为0，否则会导致并发任务超时,don't change this number
         'task_max_request' => 4000,
 
+        'log_level' => 2, //swoole 日志级别 Info
         'backlog' => 3000,
         'log_file' => '/tmp/sw_server.log',//swoole 系统日志，任何代码内echo都会在这里输出
-        'task_tmpdir' => '/tmp/swtasktmp/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
-        'pid_path' => '/tmp/',
+        'task_tmpdir' => '/dev/shm/swtask/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
+        'pid_path' => '/tmp/',//dora 自定义变量，用来保存pid文件
         'response_header' => array('Content_Type'=>'application/json; charset=utf-8'),
     );
 

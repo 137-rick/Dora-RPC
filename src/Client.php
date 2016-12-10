@@ -181,6 +181,7 @@ class Client
                 'package_body_offset' => 4,
                 'package_max_length' => 1024 * 1024 * 2,
                 'open_tcp_nodelay' => 1,
+                'socket_buffer_size' => 1024 * 1024 * 4,
             ));
 
             if (!$client->connect($connectHost, $connectPort, DoraConst::SW_RECIVE_TIMEOUT)) {
@@ -433,7 +434,7 @@ class Client
             $errorcode = $client->errCode;
 
             //destroy error client obj to make reconncet
-            //self::$client[$this->currentClientKey]->close();
+            self::$client[$this->currentClientKey]->close(true);
             unset(self::$client[$this->currentClientKey]);
             // mark the current connection cannot be used, try another channel
             $this->serverConfigBlock[$this->connectGroup][$this->currentClientKey] = 1;

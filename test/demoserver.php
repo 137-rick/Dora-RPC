@@ -37,15 +37,15 @@ $server->configure(array(
     'http' => array(
         //to improve the accept performance ,suggest the number of cpu X 2
         //如果想提高请求接收能力，更改这个，推荐cpu个数x2
-        'reactor_num' => 16,
+        'reactor_num' => 8,
 
         //packet decode process,change by condition
-        //包处理进程，根据情况调整数量
-        'worker_num' => 30,
+        //包处理进程，根据情况调整数量，推荐cpu个数x2
+        'worker_num' => 16,
 
         //the number of task logical process progcessor run you business code
         //实际业务处理进程，根据需要进行调整
-        'task_worker_num' => 200,
+        'task_worker_num' => 100,
 
         'daemonize' => false,
 

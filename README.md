@@ -15,7 +15,8 @@ For complex projects separation, the project can be better maintained by the API
 
 
 #设计思路(Design)
-http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html
+> * http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html 架构设计图
+> * http://blog.sina.com.cn/s/blog_54ef39890102w8ff.html 端午升级介绍
 
 #功能支持(Function)
 > * 支持单API调用，多API并发调用
@@ -327,6 +328,9 @@ and swoole offcial document
 
 如果想优化性能请参考以上文件的$externalConfig配置
 ```
+
+###Server Config Optimize
+> * http://wiki.swoole.com/wiki/page/p-server/sysctl.html
 
 ###License授权
 Apache
