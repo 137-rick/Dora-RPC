@@ -322,7 +322,7 @@ abstract class Server
         }
 
         #api was not set will fail
-        if (!is_array($requestInfo["api"]) && count($requestInfo["api"])) {
+        if (!is_array($requestInfo["api"]) && count($requestInfo["api"] == 0)) {
             $pack = Packet::packFormat("param api is empty", 100003);
             $pack["guid"] = $requestInfo["guid"];
             $pack = Packet::packEncode($pack);
