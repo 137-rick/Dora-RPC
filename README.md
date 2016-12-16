@@ -17,6 +17,7 @@ For complex projects separation, the project can be better maintained by the API
 #设计思路(Design)
 > * http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html 架构设计图
 > * http://blog.sina.com.cn/s/blog_54ef39890102w8ff.html 端午升级介绍
+> * http://wenku.baidu.com/view/ae8adf90e518964bce847c43.html Dora-RPC 思想介绍
 
 #功能支持(Function)
 > * 支持单API调用，多API并发调用
