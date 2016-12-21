@@ -65,6 +65,7 @@ class LogAgent
 
             //ok add the log
             if ($log !== false) {
+                $log = json_encode($log);
                 $logstr = $logstr . "\n" . $log;
                 $logcount++;
             }
