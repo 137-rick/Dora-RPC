@@ -8,8 +8,7 @@ namespace DoraRPC;
  */
 abstract class Server
 {
-    const MASTER_PID = './dorarpc.pid';
-    const MANAGER_PID = './dorarpcmanager.pid';
+
 
     private $tcpserver = null;
     private $server = null;
@@ -19,6 +18,8 @@ abstract class Server
     private $serverPort;
 
     private $monitorProcess = null;
+
+    static $logagent = null;
 
     protected $httpConfig = array(
         'dispatch_mode' => 3,
@@ -43,8 +44,6 @@ abstract class Server
         'backlog' => 3000,
         'log_file' => '/tmp/sw_server.log',//swoole 系统日志，任何代码内echo都会在这里输出
         'task_tmpdir' => '/dev/shm/swtask/',//task 投递内容过长时，会临时保存在这里，请将tmp设置使用内存
-        'pid_path' => '/tmp/',//dora 自定义变量，用来保存pid文件
-        'response_header' => array('Content_Type'=>'application/json; charset=utf-8'),
     );
 
     protected $tcpConfig = array(
@@ -60,6 +59,17 @@ abstract class Server
         'open_tcp_nodelay' => 1,
 
         'backlog' => 3000,
+    );
+
+    protected $doraConfig = array(
+        //自定义配置
+        'pid_path' => '/tmp/',//dora 自定义变量，用来保存pid文件
+        //'response_header' => array('Content_Type' => 'application/json; charset=utf-8'),
+        'master_pid' => 'doramaster.pid', //dora master pid 保存文件
+        'manager_pid' => 'doramanager.pid',//manager pid 保存文件
+        'biz_log' => '/tmp/bizlog/', //业务日志
+        //const MASTER_PID = './dorarpc.pid';
+        //const MANAGER_PID = './dorarpcmanager.pid';
     );
 
     abstract public function initServer($server);
@@ -88,6 +98,15 @@ abstract class Server
         //store current ip port
         $this->serverIP = $ip;
         $this->serverPort = $port;
+
+        if (self::$logagent == null) {
+            $logagent = new LogAgent($this->doraConfig["biz_log"]);
+            self::$logagent = $logagent;
+
+            $this->server->addProcess(new \swoole_process(function () use ($logagent) {
+                $logagent->threadDumpLog();
+            }));
+        }
     }
 
     /**
@@ -99,15 +118,19 @@ abstract class Server
     public function configure(array $config)
     {
         if (isset($config['http'])) {
-            if (isset($config['http']['response_header'])) {
-                $config['http']['response_header'] = array_merge($this->httpConfig['response_header'], $config['http']['response_header']);
-            }
+            //if (isset($config['http']['response_header'])) {
+            //    $config['http']['response_header'] = array_merge($this->httpConfig['response_header'], $config['http']['response_header']);
+            //}
 
             $this->httpConfig = array_merge($this->httpConfig, $config['http']);
         }
 
         if (isset($config['tcp'])) {
             $this->tcpConfig = array_merge($this->tcpConfig, $config['tcp']);
+        }
+
+        if (isset($config['dora'])) {
+            $this->doraConfig = array_merge($this->doraConfig, $config['dora']);
         }
         return $this;
     }
@@ -124,7 +147,7 @@ abstract class Server
             while (true) {
                 // 上报的服务器IP
                 $reportServerIP = $self->getLocalIp();
-                swoole_set_process_name("dora: monitor (".$reportServerIP.")");
+                swoole_set_process_name("dora: monitor (" . $reportServerIP . ")");
 
                 foreach ($report as $discovery) {
                     foreach ($discovery as $config) {
@@ -182,9 +205,8 @@ abstract class Server
     final public function onRequest(\swoole_http_request $request, \swoole_http_response $response)
     {
         //return the json
-        foreach ($this->httpConfig['response_header'] as $k => $v) {
-            $response->header($k, $v);
-        }
+        $response->header('Content_Type', 'application/json; charset=utf-8');
+
         //forever http 200 ,when the error json code decide
         $response->status(200);
 
@@ -239,13 +261,13 @@ abstract class Server
                 $task["type"] = DoraConst::SW_CONTROL_CMD;
 
                 if ($params["api"]["cmd"]["name"] == "getStat") {
-                    $pack = Packet::packFormat("OK", 0, array("server" => $this->server->stats()));
+                    $pack = Packet::packFormat("OK", 0, array("server" => $this->server->stats(), "logqueue" => self::$logagent->getQueueStat()));
                     $pack["guid"] = $task["guid"];
                     $response->end(json_encode($pack));
                     return;
                 }
                 if ($params["api"]["cmd"]["name"] == "reloadTask") {
-                    $pack = Packet::packFormat("OK", 0, array('server' => $this->server->stats()));
+                    $pack = Packet::packFormat("OK", 0, array('server' => $this->server->stats(), "logqueue" => self::$logagent->getQueueStat()));
                     $this->server->reload(true);
                     $pack["guid"] = $task["guid"];
                     $response->end(json_encode($pack));
@@ -269,10 +291,8 @@ abstract class Server
         echo "ManagerPid={$serv->manager_pid}\n";
         echo "Server: start.Swoole version is [" . SWOOLE_VERSION . "]\n";
 
-        $pidPath = rtrim($this->httpConfig['pid_path'], '/') . '/';
-
-        file_put_contents($pidPath . static::MASTER_PID, $serv->master_pid);
-        file_put_contents($pidPath . static::MANAGER_PID, $serv->manager_pid);
+        file_put_contents($this->doraConfig["pid_path"] . "/" . $this->doraConfig["master_pid"], $serv->master_pid);
+        file_put_contents($this->doraConfig["pid_path"] . "/" . $this->doraConfig["manager_pid"], $serv->manager_pid);
 
     }
 
@@ -392,7 +412,7 @@ abstract class Server
             case DoraConst::SW_CONTROL_CMD:
                 switch ($requestInfo["api"]["cmd"]["name"]) {
                     case "getStat":
-                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
+                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats(), "logqueue" => self::$logagent->getQueueStat()));
                         $pack["guid"] = $task["guid"];
                         $pack = Packet::packEncode($pack);
                         $serv->send($fd, $pack);
@@ -400,7 +420,7 @@ abstract class Server
 
                         break;
                     case "reloadTask":
-                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats()));
+                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats(), "logqueue" => self::$logagent->getQueueStat()));
                         $pack["guid"] = $task["guid"];
                         $pack = Packet::packEncode($pack);
                         $serv->send($fd, $pack);
@@ -460,23 +480,12 @@ abstract class Server
 
     final public function onTask($serv, $task_id, $from_id, $data)
     {
-//        swoole_set_process_name("dora: task {$task_id}_{$from_id}|" . $data["api"]["name"] . "");
         try {
             $data["result"] = Packet::packFormat("OK", 0, $this->doWork($data));
         } catch (\Exception $e) {
             $data["result"] = Packet::packFormat($e->getMessage(), $e->getCode());
         }
-        /*
-                //fixed the result more than 8k timeout bug
-                $data = serialize($data);
-                if (strlen($data) > 8000) {
-                    $temp_file = tempnam(sys_get_temp_dir(), 'swmore8k');
-                    file_put_contents($temp_file, $data);
-                    return '$$$$$$$$' . $temp_file;
-                } else {
-                    return $data;
-                }
-        */
+
         return $data;
     }
 
@@ -487,6 +496,7 @@ abstract class Server
     {
         //using the swoole error log output the error this will output to the swtmp log
         var_dump("workererror", array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
+        self::$logagent->recordLog(DoraConst::LOG_TYPE_ERROR, "worker_error", __FILE__, __LINE__, array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
     }
 
     /**
@@ -519,16 +529,6 @@ abstract class Server
     //task process finished
     final public function onFinish($serv, $task_id, $data)
     {
-        /*
-        //fixed the result more than 8k timeout bug
-        if (strpos($data, '$$$$$$$$') === 0) {
-            $tmp_path = substr($data, 8);
-            $data = file_get_contents($tmp_path);
-            unlink($tmp_path);
-        }
-        $data = unserialize($data);
-        */
-
         $fd = $data["fd"];
         $guid = $data["guid"];
 
@@ -665,13 +665,6 @@ abstract class Server
         echo "Server Was Shutdown..." . PHP_EOL;
         //shutdown
         $this->server->shutdown();
-        /*
-        //fixed the process still running bug
-        if ($this->monitorProcess != null) {
-            $monitorPid = trim(file_get_contents("./monitor.pid"));
-            \swoole_process::kill($monitorPid, SIGKILL);
-        }
-        */
     }
 
 }
