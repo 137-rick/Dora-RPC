@@ -9,7 +9,6 @@ namespace DoraRPC;
 abstract class Server
 {
 
-
     private $tcpserver = null;
     private $server = null;
     private $taskInfo = array();
@@ -19,7 +18,7 @@ abstract class Server
 
     private $monitorProcess = null;
 
-    static $logagent = null;
+    private $table = null;
 
     protected $httpConfig = array(
         'dispatch_mode' => 3,
@@ -67,7 +66,10 @@ abstract class Server
         //'response_header' => array('Content_Type' => 'application/json; charset=utf-8'),
         'master_pid' => 'doramaster.pid', //dora master pid 保存文件
         'manager_pid' => 'doramanager.pid',//manager pid 保存文件
-        'biz_log' => '/tmp/bizlog/', //业务日志
+        'log_level' => DoraConst::LOG_TYPE_INFO,//设置默认日志等级
+        'log_dump_type' => 'file',//file|logserver
+        'log_path' => '/tmp/bizlog/', //业务日志 dump path
+
         //const MASTER_PID = './dorarpc.pid';
         //const MANAGER_PID = './dorarpcmanager.pid';
     );
@@ -99,14 +101,6 @@ abstract class Server
         $this->serverIP = $ip;
         $this->serverPort = $port;
 
-        if (self::$logagent == null) {
-            $logagent = new LogAgent($this->doraConfig["biz_log"]);
-            self::$logagent = $logagent;
-
-            $this->server->addProcess(new \swoole_process(function () use ($logagent) {
-                $logagent->threadDumpLog();
-            }));
-        }
     }
 
     /**
@@ -194,9 +188,22 @@ abstract class Server
      */
     public function start()
     {
+        //config the server config
         $this->server->set($this->httpConfig);
-
         $this->tcpserver->set($this->tcpConfig);
+
+        $this->table = new \swoole_table(1024);
+        $this->table->column('value', \swoole_table::TYPE_STRING, 64);
+        $this->table->create();
+
+        //log agent init first
+        LogAgent::init($this->doraConfig["log_path"], $this->table);
+        LogAgent::setLogLevel($this->doraConfig["log_level"]);
+
+        $this->server->addProcess(new \swoole_process(function () {
+            LogAgent::threadDumpLog();
+        }));
+
 
         $this->server->start();
     }
@@ -261,13 +268,13 @@ abstract class Server
                 $task["type"] = DoraConst::SW_CONTROL_CMD;
 
                 if ($params["api"]["cmd"]["name"] == "getStat") {
-                    $pack = Packet::packFormat("OK", 0, array("server" => $this->server->stats(), "logqueue" => self::$logagent->getQueueStat()));
+                    $pack = Packet::packFormat("OK", 0, array("server" => $this->server->stats(), "logqueue" => LogAgent::getQueueStat()));
                     $pack["guid"] = $task["guid"];
                     $response->end(json_encode($pack));
                     return;
                 }
                 if ($params["api"]["cmd"]["name"] == "reloadTask") {
-                    $pack = Packet::packFormat("OK", 0, array('server' => $this->server->stats(), "logqueue" => self::$logagent->getQueueStat()));
+                    $pack = Packet::packFormat("OK", 0, array('server' => $this->server->stats(), "logqueue" => LogAgent::getQueueStat()));
                     $this->server->reload(true);
                     $pack["guid"] = $task["guid"];
                     $response->end(json_encode($pack));
@@ -412,7 +419,7 @@ abstract class Server
             case DoraConst::SW_CONTROL_CMD:
                 switch ($requestInfo["api"]["cmd"]["name"]) {
                     case "getStat":
-                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats(), "logqueue" => self::$logagent->getQueueStat()));
+                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats(), "logqueue" => LogAgent::getQueueStat()));
                         $pack["guid"] = $task["guid"];
                         $pack = Packet::packEncode($pack);
                         $serv->send($fd, $pack);
@@ -420,7 +427,7 @@ abstract class Server
 
                         break;
                     case "reloadTask":
-                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats(), "logqueue" => self::$logagent->getQueueStat()));
+                        $pack = Packet::packFormat("OK", 0, array("server" => $serv->stats(), "logqueue" => LogAgent::getQueueStat()));
                         $pack["guid"] = $task["guid"];
                         $pack = Packet::packEncode($pack);
                         $serv->send($fd, $pack);
@@ -496,7 +503,7 @@ abstract class Server
     {
         //using the swoole error log output the error this will output to the swtmp log
         var_dump("workererror", array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
-        self::$logagent->recordLog(DoraConst::LOG_TYPE_ERROR, "worker_error", __FILE__, __LINE__, array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
+        LogAgent::recordLog(DoraConst::LOG_TYPE_ERROR, "worker_error", __FILE__, __LINE__, array($this->taskInfo, $serv, $worker_id, $worker_pid, $exit_code));
     }
 
     /**

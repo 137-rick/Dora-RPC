@@ -18,7 +18,7 @@ class Server extends \DoraRPC\Server
         //process you logical 业务实际处理代码仍这里
         //return the result 使用return返回处理结果
         //throw new Exception("asbddddfds",1231);
-        self::$logagent->recordLog(\DoraRPC\DoraConst::LOG_TYPE_INFO, "tag", __FILE__, __LINE__, array("esfs"));
+        \DoraRPC\LogAgent::recordLog(\DoraRPC\DoraConst::LOG_TYPE_INFO, "dowork", __FILE__, __LINE__, array("esfs"));
         return array("hehe" => "ohyes123");
     }
 
@@ -58,7 +58,7 @@ $server->configure(array(
         //'response_header' => array('Content_Type' => 'application/json; charset=utf-8'),
         'master_pid' => 'doramaster.pid', //dora master pid 保存文件
         'manager_pid' => 'doramanager.pid',//manager pid 保存文件
-        'biz_log' => '/tmp/bizlog/', //业务日志
+        'log_path' => '/tmp/bizlog/', //业务日志
     ),
 ));
 
