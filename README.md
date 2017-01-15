@@ -50,14 +50,14 @@ composer require "xcl3721/dora-rpc"
 > * 使用最简单的方式实现的客户端，通过这个框架可以轻松实现PHP的伪多线程，通过分布式加快接口响应速度及高可用
 > * an simple client,it's easy adn simply to implement the multi fake thread,you can speed up you API by this distribute RPC
 
-###dora-rpc/src/Server.php
-> * 使用最简单的方式实现的服务端
+###dora-rpc/src/BackEndServer.php
+> * API服务端
 > * 目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 > * 做这个只是为了减少大家启用RPC的开发时间
 > * 开启服务发现功能，服务端在启动的时候，如果指定redis配置则会自动将当前服务器信息注册到Redis上
 > * 返回结果是一个数组 分两部分，第一层是通讯状态code，第二层是处理状态 code
 
-> * a simple server
+> * a powerful API server
 > * you must extends the swserver and implement dowork function
 > * it's use for decrease the dev cycle
 > * when you setup the redis config the server will register this server to the redis for service discovery

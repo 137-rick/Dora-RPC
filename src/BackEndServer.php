@@ -6,7 +6,7 @@ namespace DoraRPC;
  * https://github.com/xcl3721/Dora-RPC
  * by 蓝天 http://weibo.com/thinkpc
  */
-abstract class Server
+abstract class BackEndServer
 {
 
     private $tcpserver = null;
