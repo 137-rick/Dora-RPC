@@ -3,10 +3,16 @@ namespace DoraRPC;
 
 class DoraConst
 {
+    ///////////
+    // 同步、异步不要结果、异步获取结果
+    ///////////
     const SW_MODE_WAITRESULT = 0;
     const SW_MODE_NORESULT = 1;
     const SW_MODE_ASYNCRESULT = 2;
 
+    //////////
+    // 服务器调用方式类型
+    //////////
     //sync wait task result
     //任务下发后阻塞等待结果
     const SW_MODE_WAITRESULT_SINGLE = 'W_S';
@@ -40,4 +46,35 @@ class DoraConst
     //salt to mixed the crc result
     //上面开关开启后，用于加密串混淆结果，请保持客户端和服务端一致
     const SW_DATASIGEN_SALT = "=&$*#@(*&%(@";
+
+    /////////////////
+    //分级日志等级
+    /////////////////
+
+    //debug 信息，用于调试信息输出，默认不会输出，当在生产环境在线调试时使用
+    const LOG_TYPE_DEBUG = 1;
+
+    //trace
+    const LOG_TYPE_TRACE = 2;
+
+    //notice
+    const LOG_TYPE_NOTICE = 3;
+
+    //info 信息
+    const LOG_TYPE_INFO = 4;
+
+    //错误 信息
+    const LOG_TYPE_ERROR = 5;
+
+    //警报 信息
+    const LOG_TYPE_EMEGENCY = 6;
+
+    //异常 信息
+    const LOG_TYPE_EXCEPTION = 7;
+
+    //日志类型：性能日志
+    const LOG_TYPE_SNAP = 8;
+
+    //日志类型：埋点耗时性能日志
+    const LOG_TYPE_PERFORMENCE = 9;
 }

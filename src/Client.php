@@ -228,7 +228,6 @@ class Client
         $this->guid = $this->generateGuid();
 
         $packet = array(
-            'guid' => $this->guid,
             'api' => array(
                 "cmd" => array(
                     'name' => "getStat",
@@ -236,13 +235,14 @@ class Client
                 ),
             ),
             'type' => DoraConst::SW_CONTROL_CMD,
+            'guid' => $this->guid,
         );
 
         $sendData = Packet::packEncode($packet);
         $result = $this->doRequest($sendData, DoraConst::SW_MODE_WAITRESULT_SINGLE);
 
         if ($this->guid != $result["guid"]) {
-            return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
+            return Packet::packFormat($this->guid, "guid wront please retry..", 100100, $result["data"]);
         }
 
         //revert befor connect mode
@@ -253,6 +253,12 @@ class Client
         return $result["data"];
     }
 
+    /**
+     * reload 指定服务器的代码
+     * @param string $ip
+     * @param string $port
+     * @return array
+     */
     public function reloadServerTask($ip = "", $port = "")
     {
         $beformode = $this->getConnectMode();
@@ -265,7 +271,6 @@ class Client
         $this->guid = $this->generateGuid();
 
         $packet = array(
-            'guid' => $this->guid,
             'api' => array(
                 "cmd" => array(
                     'name' => "reloadTask",
@@ -273,13 +278,14 @@ class Client
                 ),
             ),
             'type' => DoraConst::SW_CONTROL_CMD,
+            'guid' => $this->guid,
         );
 
         $sendData = Packet::packEncode($packet);
         $result = $this->doRequest($sendData, DoraConst::SW_MODE_WAITRESULT_SINGLE);
 
         if ($this->guid != $result["guid"]) {
-            return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
+            return Packet::packFormat($this->guid, "guid wront please retry..", 100100, $result["data"]);
         }
 
         //revert befor connect mode
@@ -318,13 +324,13 @@ class Client
         $this->guid = $this->generateGuid();
 
         $packet = array(
-            'guid' => $this->guid,
             'api' => array(
                 "one" => array(
                     'name' => $name,
                     'param' => $param,
                 )
             ),
+            'guid' => $this->guid,
         );
 
         switch ($mode) {
@@ -353,7 +359,7 @@ class Client
         }
 
         if ($this->guid != $result["guid"]) {
-            return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
+            return Packet::packFormat($this->guid, "guid wront please retry..", 100100, $result["data"]);
         }
 
         return $result;
@@ -379,8 +385,8 @@ class Client
         $this->guid = $this->generateGuid();
 
         $packet = array(
-            'guid' => $this->guid,
             'api' => $params,
+            'guid' => $this->guid,
         );
 
         switch ($mode) {
@@ -409,7 +415,7 @@ class Client
         }
 
         if ($this->guid != $result["guid"]) {
-            return Packet::packFormat("guid wront please retry..", 100100, $result["data"]);
+            return Packet::packFormat($this->guid, "guid wront please retry..", 100100, $result["data"]);
         }
 
         return $result;
@@ -422,8 +428,7 @@ class Client
         try {
             $client = $this->getClientObj();
         } catch (\Exception $e) {
-            $data = Packet::packFormat($e->getMessage(), $e->getCode());
-            $data["guid"] = $this->guid;
+            $data = Packet::packFormat($this->guid, $e->getMessage(), $e->getCode());
             return $data;
         }
 
@@ -442,10 +447,10 @@ class Client
             if ($errorcode == 0) {
                 $msg = "connect fail.check host dns.";
                 $errorcode = -1;
-                $packet = Packet::packFormat($msg, $errorcode);
+                $packet = Packet::packFormat($this->guid, $msg, $errorcode);
             } else {
                 $msg = \socket_strerror($errorcode);
-                $packet = Packet::packFormat($msg, $errorcode);
+                $packet = Packet::packFormat($this->guid, $msg, $errorcode);
             }
 
             return $packet;
@@ -499,8 +504,7 @@ class Client
                 }
             } else {
                 //time out
-                $packet = Packet::packFormat("the recive wrong or timeout", 100009);
-                $packet["guid"] = $this->guid;
+                $packet = Packet::packFormat($this->guid, "the recive wrong or timeout", 100009);
                 return $packet;
             }
         }
@@ -537,13 +541,13 @@ class Client
                         } else {
                             //remove the result
                             unset(self::$asynclist[$k]);
-                            self::$asynresult[$k] = Packet::packFormat("the recive wrong or timeout", 100009);
+                            self::$asynresult[$k] = Packet::packFormat($this->guid, "the recive wrong or timeout", 100009);
                             continue;
                         }
                     } else {
                         //remove the result
                         unset(self::$asynclist[$k]);
-                        self::$asynresult[$k] = Packet::packFormat("Get Async Result Fail: Client Closed.", 100012);
+                        self::$asynresult[$k] = Packet::packFormat($this->guid, "Get Async Result Fail: Client Closed.", 100012);
                         continue;
                     }
                 } // foreach the list
@@ -554,7 +558,7 @@ class Client
 
         $result = self::$asynresult;
         self::$asynresult = array();
-        return Packet::packFormat("OK", 0, $result);
+        return Packet::packFormat($this->guid, "OK", 0, $result);
     }
 
     //clean up the async list and result

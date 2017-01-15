@@ -9,7 +9,7 @@
   "homepage": "https://github.com/xcl3721/dora-rpc",
   "require": {
     "php": ">=5.4.30",
-    "ext-swoole" : "1.8.*"
+    "ext-swoole" : "1.9.*"
   },
   "autoload": {
     "psr-4": {
