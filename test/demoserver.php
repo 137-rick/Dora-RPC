@@ -1,10 +1,10 @@
 <?php
 include "../src/DoraConst.php";
 include "../src/Packet.php";
-include "../src/Server.php";
+include "../src/BackEndServer.php";
 include "../src/LogAgent.php";
 
-class Server extends \DoraRPC\Server
+class APIServer extends \DoraRPC\BackEndServer
 {
 
     function initServer($server)
@@ -29,7 +29,7 @@ class Server extends \DoraRPC\Server
 }
 
 //ok start server
-$server = new Server("0.0.0.0", 9567, 9566);
+$server = new APIServer("0.0.0.0", 9567, 9566);
 
 $server->configure(array(
     'tcp' => array(),
