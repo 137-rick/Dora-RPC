@@ -4,9 +4,10 @@
 for ($i = 0; $i < 10000; $i++) {
     $time = microtime(true);
 
+    $guid = md5(mt_rand(1000000, 9999999) . mt_rand(1000000, 9999999) . microtime(true));
     //mutil call sync wait result
     $data = array(
-        "guid" => md5(mt_rand(1000000, 9999999) . mt_rand(1000000, 9999999) . microtime(true)),
+        "guid" => $guid,
 
         "api" => array(
             "oak" => array("name" => "/module_d/oakdf", "param" => array("dsaf" => "32111321")),
@@ -15,7 +16,7 @@ for ($i = 0; $i < 10000; $i++) {
     ,
     );
 
-    $data_string = "params=" . urlencode(json_encode($data));
+    $data_string = "params=" . urlencode(json_encode($data)) . "&guid=" . $guid;
 
     $ch = curl_init('http://127.0.0.1:9566/api/multisync');
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
@@ -32,8 +33,9 @@ for ($i = 0; $i < 10000; $i++) {
 
 
     //multi call no wait result
+    $guid = md5(mt_rand(1000000, 9999999) . mt_rand(1000000, 9999999) . microtime(true));
     $data = array(
-        "guid" => md5(mt_rand(1000000, 9999999) . mt_rand(1000000, 9999999) . microtime(true)),
+        "guid" => $guid,
 
         "api" => array(
             "oak" => array("name" => "/module_d/oakdf", "param" => array("dsaf" => "32111321")),
@@ -41,8 +43,7 @@ for ($i = 0; $i < 10000; $i++) {
         )
     ,
     );
-
-    $data_string = "params=" . urlencode(json_encode($data));
+    $data_string = "params=" . urlencode(json_encode($data)) . "&guid=" . $guid;
 
     $ch = curl_init('http://127.0.0.1:9566/api/multinoresult');
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
@@ -56,7 +57,6 @@ for ($i = 0; $i < 10000; $i++) {
 
     $result = curl_exec($ch);
     var_dump(json_decode($result, true));
-
 
     $time = bcsub(microtime(true), $time, 5);
     if ($time > $maxrequest) {
