@@ -1,4 +1,4 @@
-#Dora RPC
+# Dora RPC
  
 [![Build Status](https://travis-ci.org/xcl3721/Dora-RPC.svg?branch=master)](https://travis-ci.org/xcl3721/Dora-RPC) [![Latest Stable Version](https://poser.pugx.org/xcl3721/dora-rpc/v/stable)](https://packagist.org/packages/xcl3721/dora-rpc) [![Latest Unstable Version](https://poser.pugx.org/xcl3721/dora-rpc/v/unstable)](https://packagist.org/packages/xcl3721/dora-rpc) [![License](https://poser.pugx.org/xcl3721/dora-rpc/license)](https://packagist.org/packages/xcl3721/dora-rpc)
 ## 简介(Introduction)
@@ -14,12 +14,12 @@ For complex projects separation, the project can be better maintained by the API
 > * add the http protocol and KeepAlive for the other program language
 
 
-#设计思路(Design)
+# 设计思路(Design)
 > * http://blog.sina.com.cn/s/blog_54ef39890102vs3h.html 架构设计图
 > * http://blog.sina.com.cn/s/blog_54ef39890102w8ff.html 端午升级介绍
 > * http://wenku.baidu.com/view/ae8adf90e518964bce847c43.html Dora-RPC 思想介绍
 
-#功能支持(Function)
+# 功能支持(Function)
 > * 支持单API调用，多API并发调用
 > * 支持同步调用，异步任务下发不等待结果，异步任务下发统一拿回结果
 > * 其他相关知识请参考Swoole扩展
@@ -35,7 +35,7 @@ For complex projects separation, the project can be better maintained by the API
 > * service discovery.
 > * base on Redis. Service discovery for High available
 
-##请安装依赖(depend)
+## 请安装依赖(depend)
 > * Swoole 1.8.x+
 > * PHP 5.4+
 > * zlib for compress packet
@@ -45,12 +45,12 @@ For complex projects separation, the project can be better maintained by the API
 composer require "xcl3721/dora-rpc"
 ```
 
-##文件功能简介(File)
-###dora-rpc/src/Client.php
+## 文件功能简介(File)
+### dora-rpc/src/Client.php
 > * 使用最简单的方式实现的客户端，通过这个框架可以轻松实现PHP的伪多线程，通过分布式加快接口响应速度及高可用
 > * an simple client,it's easy adn simply to implement the multi fake thread,you can speed up you API by this distribute RPC
 
-###dora-rpc/src/BackEndServer.php
+### dora-rpc/src/BackEndServer.php
 > * API服务端
 > * 目前需要继承才能使用，继承后请实现dowork，这个函数是实际处理任务的函数参数为提交参数
 > * 做这个只是为了减少大家启用RPC的开发时间
@@ -63,21 +63,21 @@ composer require "xcl3721/dora-rpc"
 > * when you setup the redis config the server will register this server to the redis for service discovery
 > * the result will be a two-level arrayfirst is communicate state 'code field' ,second is dowork state
 
-###dora-rpc/src/Monitor.php
+### dora-rpc/src/Monitor.php
 > * 服务发现客户端，通过扫描Redis获取到所有可用后端服务列表，并生成配置到指定路径
 > * an discovery controller client that:scan all the redis and get the list of available service and general config file to special path
 
-###dora-rpc/src/groupclient.php (combined to client.php)
+### dora-rpc/src/groupclient.php (combined to client.php)
 > * 服务发现monitor进程产生的配置可以用这个客户端直接引用，请求时可以指定使用哪个组的服务
 > * an client for service discovery （monitor general the config from redis） that you can use the config directly 
 
-##使用方法(Example)
-###任务下发模式介绍(task deploy mode)
+## 使用方法(Example)
+### 任务下发模式介绍(task deploy mode)
 > * 0 sync wait result 同步下发任务阻塞等待结果返回
 > * 1 async no need result 下发异步任务，下发成功返回下发成功提示，不等待任务处理结果
 > * 2 async get result by getAsyncData function 下发异步任务，下发成功返回下发成功提示，可以在后续调用getAsyncData 获取所有下发的异步结果
 
-###TCP客户端(TCP Client)
+### TCP客户端(TCP Client)
 ```PHP
 
 $config = include("client.conf.php");
@@ -151,7 +151,7 @@ echo "max:" . $maxrequest . PHP_EOL;
 
 ```
 
-###HTTP客户端(Http Client)
+### HTTP客户端(Http Client)
 
 http protocol for the other language use performance is common.suggest used tcp client
 ```PHP
@@ -224,7 +224,7 @@ echo "max:" . $maxrequest . PHP_EOL;
 
 ```
 
-###服务端(Server)
+### 服务端(Server)
 ```PHP
 
 class Server extends DoraRPCServer {
@@ -288,12 +288,12 @@ $res = new \DoraRPC\Monitor("0.0.0.0", 9569, $redisconfig, "./client.conf.php");
 //this server will auto get the node server list from redis and general the client config on special path
 ```
 
-###以上代码测试方法
+### 以上代码测试方法
 include以上两个文件，使用命令行启动即可（客户端支持在apache nginx fpm内执行，服务端只支持命令行启动）
 > * php democlient.php
 > * php demoserver.php
 
-##错误码及含义(Error Code)
+## 错误码及含义(Error Code)
 > * 0 Success work
 > * 100001 async task success
 > * 100002 unknow task type
@@ -309,19 +309,19 @@ include以上两个文件，使用命令行启动即可（客户端支持在apac
 > * 100099 unknow communicate mode have been set
 > * 100100 guid wront please retry..
 
-##性能(Performance)
+## 性能(Performance)
 > * Mac I7 Intel 2.2Mhz 
 > * Vagrant with Vm 1 Core
 > * 1G Memory
 > * with example code (loop forever)
 
-###测试结果Result
+### 测试结果Result
 > * Network Cost:0.002~0.004/sec Per Request
 > * CPU 10~25%
 以上还有很大优化空间
 There is still a lot of optimization space
 
-###Optimize performance性能优化
+### Optimize performance性能优化
 ```
 vim demoserver.php
 to see $externalConfig var
@@ -330,11 +330,11 @@ and swoole offcial document
 如果想优化性能请参考以上文件的$externalConfig配置
 ```
 
-###Server Config Optimize
+### Server Config Optimize
 > * http://wiki.swoole.com/wiki/page/p-server/sysctl.html
 
-###License授权
+### License授权
 Apache
 
-###QQ Group
+### QQ Group
 QQ Group:346840633
