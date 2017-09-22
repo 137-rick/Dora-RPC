@@ -347,7 +347,7 @@ abstract class BackEndServer
         }
 
         #api was not set will fail
-        if (!is_array($requestInfo["api"]) && count($requestInfo["api"] == 0)) {
+        if (!is_array($requestInfo["api"]) && count($requestInfo["api"])== 0) {
             $pack = Packet::packFormat($requestInfo["guid"], "param api is empty", 100003);
             $pack = Packet::packEncode($pack);
             $serv->send($fd, $pack);
