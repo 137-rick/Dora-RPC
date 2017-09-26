@@ -161,8 +161,13 @@ abstract class BackEndServer
                                     ),
                                     "group" => $group,
                                 )));
-                                //set time out
-                                $_redisObj[$key]->set("dora.servertime." . $reportServerIP . "." . $self->serverPort . ".time", time());
+
+                                // 按照group名称标记
+                                foreach ($group as $groupName) {
+                                    //set time out
+                                    $_redisObj[$key]->set("dora.servertime." . $groupName . "." . $reportServerIP . "." . $self->serverPort . ".time", time());
+                                }
+
                                 echo "Reported Service Discovery:" . $config["ip"] . ":" . $config["port"] . PHP_EOL;
 
                             } catch (\Exception $ex) {

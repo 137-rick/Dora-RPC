@@ -49,7 +49,7 @@ class Monitor
                                     //decode success
                                     if ($info) {
                                         //get last report time
-                                        $lastTimeKey = "dora.servertime." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
+                                        $lastTimeKey = "dora.servertime.". $groupName . "." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
                                         $lastUpdatTime = $_redisObj[$key]->get($lastTimeKey);
 
                                         //timeout ignore
