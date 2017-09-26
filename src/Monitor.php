@@ -48,17 +48,18 @@ class Monitor
                                     $info = json_decode($sitem, true);
                                     //decode success
                                     if ($info) {
-                                        //get last report time
-                                        $lastTimeKey = "dora.servertime." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
-                                        $lastUpdatTime = $_redisObj[$key]->get($lastTimeKey);
-
-                                        //timeout ignore
-                                        if (time() - $lastUpdatTime > 20) {
-                                            continue;
-                                        }
 
                                         if (is_array($info["group"])) {
-                                            foreach ($info["group"] as $groupname) {
+                                            foreach ($info["group"] as $groupName) {
+                                                //get last report time
+                                                $lastTimeKey = "dora.servertime.". $groupName . "." . $info["node"]["ip"] . "." . $info["node"]["port"] . ".time";
+                                                $lastUpdatTime = $_redisObj[$key]->get($lastTimeKey);
+
+                                                //timeout ignore
+                                                if (time() - $lastUpdatTime > 20) {
+                                                    continue;
+                                                }
+
                                                 $clientkey = $info["node"]["ip"] . "_" . $info["node"]["port"];
                                                 $serverListResult[$groupname][$clientkey] = array("ip" => $info["node"]["ip"], "port" => $info["node"]["port"]);
                                                 $serverListResult[$groupname][$clientkey]["updatetime"] = $lastUpdatTime;
