@@ -85,6 +85,8 @@ class LogAgent
 
                 $logstr = $logstr . "\n" . $log;
                 $logcount++;
+            }else{
+                usleep(10000);
             }
 
             //logcount大于100条，过去时间3秒 dump日志
