@@ -1,9 +1,10 @@
 {
   "name": "xcl3721/dora-rpc",
-  "description": "Dora RPC is an Basic Swoole",
+  "description": "Dora RPC is an Basic Swoole MicroService FrameWork",
   "keywords": [
     "RPC",
-    "Dora-RPC"
+    "Dora-RPC",
+    "MicroService"
   ],
   "license": "Apache-2.0",
   "homepage": "https://github.com/xcl3721/dora-rpc",

@@ -1,3 +1,5 @@
 # Created by .ignore support plugin (hsz.mobi)
 /.idea
 *.pid
+composer.lock
+vendor/*
