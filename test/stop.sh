@@ -1,1 +1,0 @@
-cat /tmp/dorarpc.pid|xargs kill
