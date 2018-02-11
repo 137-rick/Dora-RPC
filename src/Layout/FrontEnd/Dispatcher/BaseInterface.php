@@ -3,6 +3,7 @@
 namespace DoraRPC\Layout\FrontEnd\Dispatcher;
 
 use DoraRPC\Common\Func;
+use DoraRPC\Lib\Log;
 
 abstract class BaseInterface
 {
@@ -19,16 +20,20 @@ abstract class BaseInterface
 	{
 		$this->_mainObj = $mainobj;
 		$this->_config = $mainobj->getConfig();
+		$this->_serverName = $this->_config["server"]["server_name"];
 	}
 
 	public function onStart(\swoole_server $server)
 	{
 		Func::setProcessName($this->_config["server"]["server_name"], "master");
+		Log::info("server_start", __FILE__, __LINE__, "Server is Start");
+
 	}
 
 	public function onShutdown(\swoole_server $server)
 	{
 		$this->_mainObj->_monitorTable->dumpTableRecord();
+		Log::info("server_shutdown", __FILE__, __LINE__, "Server is Close");
 	}
 
 	public function onWorkerStart(\swoole_server $server, $worker_id)
@@ -36,15 +41,18 @@ abstract class BaseInterface
 		if (!$server->taskworker) {
 			//worker
 			Func::setProcessName($this->_config["server"]["server_name"], "worker");
+			Log::info("worker_start", __FILE__, __LINE__, "Worker Process Stared id:$worker_id");
+
 		} else {
 			//task
 			Func::setProcessName($this->_config["server"]["server_name"], "task");
+			Log::info("task_start", __FILE__, __LINE__, "Task Process Stared id:$worker_id");
 		}
 	}
 
 	public function onWorkerError(\swoole_server $serv, $worker_id, $worker_pid, $exit_code, $signal)
 	{
-
+		Log::error("worker_error", __FILE__, __LINE__, "worker_id:$worker_id,worker_pid:$worker_pid,code:$exit_code,signal:$signal");
 	}
 
 	public function onWorkerStop(\swoole_server $server, $worker_id)
@@ -55,11 +63,13 @@ abstract class BaseInterface
 	public function onManagerStart(\swoole_server $serv)
 	{
 		Func::setProcessName($this->_config["server"]["server_name"], "manager");
+		Log::info("manager_start", __FILE__, __LINE__, "Manager Process Stared");
+
 	}
 
 	public function onManagerStop(\swoole_server $serv)
 	{
-
+		Log::info("manager_stop", __FILE__, __LINE__, "Manager Process Stopped");
 	}
 
 

@@ -70,7 +70,7 @@ $config =
 
 			'discard_timeout_request' => false,
 
-			//swoole 日志级别 Info
+			//swoole 日志级别 0 ALL. 1:Trace. 2:Info
 			'log_level' => 2,
 
 			//swoole 系统日志，任何代码内echo都会在这里输出

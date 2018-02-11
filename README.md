@@ -11,7 +11,7 @@ Question:[Issue](https://github.com/xcl3721/Dora-RPC/issues)
 # Function
 
 ## depend
-> * Swoole 2..13+
+> * Swoole 2.0.13+
 > * PHP 7.1+
 
 ## Installation

@@ -21,6 +21,11 @@ class BaseServer
 
 	public $_monitorTable = null;
 
+	/**
+	 * 根据协议类型获取协议定义配置
+	 * @param $protocol
+	 * @return array
+	 */
 	private function getServerClassInfo($protocol)
 	{
 		$protocol = strtolower($protocol);
@@ -236,6 +241,9 @@ class BaseServer
 					$subserver->on('Receive', array($dispatcher, 'onReceive'));
 				}
 
+				//set option
+				$subserver->set($subClassInfo["option"]);
+
 			}
 		}
 
@@ -259,7 +267,8 @@ class BaseServer
 		}));
 
 		Log::info("Server", __FILE__, __LINE__,
-			"Server IP:" . $this->_config["server"]["listen"] . " Port:" . $this->_config["server"]["port"] . " LocalIP:" . Func::getLocalIp());
+			"Server IP:" . $this->_config["server"]["listen"] . " Port:" . $this->_config["server"]["port"]
+			. " LocalIP:" . Func::getLocalIp());
 
 		$this->_server->start();
 
