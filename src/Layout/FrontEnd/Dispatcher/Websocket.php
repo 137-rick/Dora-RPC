@@ -10,6 +10,6 @@ class Websocket extends BaseInterface
 	public function onRequest($request, $response)
 	{
 		Context::put("key","test");
-		echo Context::get("key");
+		$response->end(Context::get("key"));
 	}
 }

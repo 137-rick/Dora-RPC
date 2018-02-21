@@ -4,6 +4,48 @@ require_once "init.php";
 use DoraRPC\Layout\FrontEnd\BaseServer;
 use DoraRPC\Lib\Log;
 
+register_shutdown_function('handleFatal');
+function handleFatal()
+{
+	$error = error_get_last();
+	if (isset($error['type'])) {
+		switch ($error['type']) {
+			case E_ERROR :
+			case E_PARSE :
+			case E_CORE_ERROR :
+			case E_COMPILE_ERROR :
+				$message = $error['message'];
+				$file = $error['file'];
+				$line = $error['line'];
+				$log = "$message ($file:$line)\nStack trace:\n";
+				$trace = debug_backtrace();
+				foreach ($trace as $i => $t) {
+					if (!isset($t['file'])) {
+						$t['file'] = 'unknown';
+					}
+					if (!isset($t['line'])) {
+						$t['line'] = 0;
+					}
+					if (!isset($t['function'])) {
+						$t['function'] = 'unknown';
+					}
+					$log .= "#$i {$t['file']}({$t['line']}): ";
+					if (isset($t['object']) and is_object($t['object'])) {
+						$log .= get_class($t['object']) . '->';
+					}
+					$log .= "{$t['function']}()\n";
+				}
+				if (isset($_SERVER['REQUEST_URI'])) {
+					$log .= '[QUERY] ' . $_SERVER['REQUEST_URI'];
+				}
+				error_log($log);
+				Log::error("end_fatal", __FILE__, __LINE__, $log, $error);
+			default:
+				break;
+		}
+	}
+}
+
 $config =
 	array(
 		//主服务，选主服务 建议按 websocket（http） > http > udp || tcp 顺序创建
@@ -49,7 +91,7 @@ $config =
 		"swoole" => array(
 			//'user' => 'www',
 			//'group' => 'www',
-			'dispatch_mode' => 7,
+			'dispatch_mode' => 2,
 
 			'package_max_length' => 2097152, // 1024 * 1024 * 2,
 			'buffer_output_size' => 3145728, //1024 * 1024 * 3,
