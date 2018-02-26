@@ -91,7 +91,7 @@ $config =
 		"swoole" => array(
 			//'user' => 'www',
 			//'group' => 'www',
-			'dispatch_mode' => 2,
+			'dispatch_mode' => 7,
 
 			'package_max_length' => 2097152, // 1024 * 1024 * 2,
 			'buffer_output_size' => 3145728, //1024 * 1024 * 3,
