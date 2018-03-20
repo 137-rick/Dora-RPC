@@ -2,7 +2,7 @@
 
 namespace DoraRPC\Layout\BackEnd;
 
-use DoraRPC\Common\Config;
+use DoraRPC\Lib\Config;
 
 class APIServer
 {

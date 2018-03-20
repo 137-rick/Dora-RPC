@@ -1,6 +1,6 @@
 <?php
 
-namespace DoraRPC\Common;
+namespace DoraRPC\Lib;
 
 class Config
 {
