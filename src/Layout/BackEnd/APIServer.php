@@ -2,9 +2,13 @@
 
 namespace DoraRPC\Layout\BackEnd;
 
+use DoraRPC\Common\Config;
+
 class APIServer
 {
 	private $_server;
+
+	private $_config;
 
 	public function __construct($ip, $port)
 	{
@@ -25,7 +29,6 @@ class APIServer
 			if ($ret) {
 				for($i=0;$i<100;$i++) {
 					$cli->push("hello");
-					$cli->push("hello");
 
 					var_dump($cli->recv());
 				}
@@ -36,11 +39,15 @@ class APIServer
 
 	}
 
+    /**
+     * 根据路径加载配置文件
+     * @param $filepath
+     * @throws \Exception
+     */
 	public function loadConfig($filepath)
 	{
-		$this->_server->set([
-			'worker_num' => 4,
-		]);
+	    Config::loadConfig($filepath);
+		$this->_server->set(Config::getSwooleConfig());
 	}
 
 	public function start()
