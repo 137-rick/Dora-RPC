@@ -3,4 +3,4 @@
 *.pid
 composer.lock
 vendor/*
-logs/*
+logs/*.log

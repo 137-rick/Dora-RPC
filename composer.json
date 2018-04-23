@@ -9,17 +9,15 @@
   "license": "Apache-2.0",
   "homepage": "https://github.com/xcl3721/dora-rpc",
   "require": {
-    "php": ">=7.1.0"},
+    "php": ">=7.1.0"
+  },
+  "require-dev": {
+    "easyswoole/swoole-ide-helper": "dev-master",
+    "phpunit/phpunit" : "^5.6"
+  },
   "autoload": {
     "psr-4": {
-      "DoraRPC\\": "src",
-      "DoraRPC\\Common\\": "src/Common",
-      "DoraRPC\\Layout\\": "src/Layout",
-      "DoraRPC\\Layout\\BackEnd\\": "src/Layout/BackEnd",
-      "DoraRPC\\Layout\\FrontEnd\\": "src/Layout/FrontEnd",
-      "DoraRPC\\Layout\\FrontEnd\\Dispatcher\\": "src/Layout/FrontEnd/Dispatcher",
-      "DoraRPC\\Layout\\Service\\": "src/Layout/Service",
-      "DoraRPC\\Lib\\": "src/Lib"
+      "DoraRPC\\": "src"
     }
   },
   "authors": [

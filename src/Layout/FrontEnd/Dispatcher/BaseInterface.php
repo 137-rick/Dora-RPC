@@ -141,7 +141,11 @@ abstract class BaseInterface
 	//返回信息
 	public function response($code, $msg, $data)
 	{
-
+        return array(
+            "code" => $code,
+            "msg" => $msg,
+            "data" => $data
+        );
 	}
 
 
